@@ -2,12 +2,12 @@
 using ClashWrapper.Entities.War;
 using ClashWrapper.Entities.WarLog;
 using ClashWrapper.Models.War;
+using ClashWrapper.Models.WarLog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using ClashWrapper.Models.WarLog;
 
 namespace ClashWrapper
 {
@@ -20,11 +20,18 @@ namespace ClashWrapper
             _request = new RequestClient(this, config);
         }
 
-        public event Func<ErrorMessage, Task> ErrorReceived;
+        public event Func<ErrorMessage, Task> Error;
 
         internal Task InternalErrorReceivedAsync(ErrorMessage message)
         {
-            return ErrorReceived is null ? Task.CompletedTask : ErrorReceived.Invoke(message);
+            return Error is null ? Task.CompletedTask : Error.Invoke(message);
+        }
+
+        public event Func<string, Task> Log;
+
+        internal Task InternalLogReceivedAsync(string message)
+        {
+            return Log is null ? Task.CompletedTask : Log.Invoke(message);
         }
 
         public async Task<CurrentWar> GetCurrentWarAsync(string clanTag)

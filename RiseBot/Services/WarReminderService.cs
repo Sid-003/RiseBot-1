@@ -26,7 +26,7 @@ namespace RiseBot.Services
             _clash = clash;
             _database = database;
 
-            _clash.ErrorReceived += (message) =>
+            _clash.Error += (message) =>
             {
                 if (message.Error != "inMaintenance")
                     return Task.CompletedTask;

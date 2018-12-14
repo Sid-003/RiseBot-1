@@ -1,10 +1,7 @@
-﻿using System.Net.Http;
-
-namespace ClashWrapper
+﻿namespace ClashWrapper
 {
     public class ClashClientConfig
     {
         public string Token { get; set; }
-        public HttpClient HttpClient { get; set; }
     }
 }

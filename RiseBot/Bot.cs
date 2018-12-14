@@ -6,7 +6,6 @@ using Qmmands;
 using RiseBot.Commands;
 using RiseBot.Services;
 using System;
-using System.Net.Http;
 using System.Reflection;
 using System.Threading.Tasks;
 
@@ -22,14 +21,12 @@ namespace RiseBot
         public async Task RunBotAsync()
         {
             var config = Config.Create("./config.json");
-            var httpClient = new HttpClient();
 
             _database = await new DatabaseService().InitialiseAsync();
 
             var clashClient = new ClashClient(new ClashClientConfig
             {
-                Token = config.ClashToken,
-                HttpClient = httpClient
+                Token = config.ClashToken
             });
             
             _services = new ServiceCollection()
