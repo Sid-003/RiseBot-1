@@ -23,12 +23,16 @@ namespace RiseBot.Services
             _writeSemaphore = new SemaphoreSlim(1);
         }
 
-        public async Task<DatabaseService> InitialiseAsync()
+        public async Task<DatabaseService> LoadGuildAsync()
         {
+            await _readSemaphore.WaitAsync();
             Guild = await GetEntityAsync<Guild>(GuildId);
 
             if (!(Guild is null))
+            {
+                _readSemaphore.Release();
                 return this;
+            }
 
             Guild = new Guild
             {
@@ -38,6 +42,7 @@ namespace RiseBot.Services
 
             await WriteEntityAsync(Guild);
 
+            _readSemaphore.Release();
             return this;
         }
 

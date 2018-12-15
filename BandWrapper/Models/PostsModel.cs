@@ -45,6 +45,9 @@ namespace BandWrapper.Models
 
         [JsonProperty("band_key")]
         public string BandKey { get; set; }
+
+        [JsonProperty("latest_comments")]
+        public PostsCommentModel[] Comments { get; set; }
     }
 
     internal class PostsAuthorModel
@@ -67,7 +70,7 @@ namespace BandWrapper.Models
         [JsonProperty("member_certified")]
         public bool Certified { get; set; }
 
-        [JsonProperty("Key")]
+        [JsonProperty("user_key")]
         public string Key { get; set; }
     }
 
@@ -118,7 +121,17 @@ namespace BandWrapper.Models
 
     internal class PostsCommentAuthorModel
     {
+        [JsonProperty("name")]
+        public string Name { get; set; }
 
+        [JsonProperty("profile_image_url")]
+        public string ProfileImageUrl { get; set; }
+
+        [JsonProperty("description")]
+        public string Description { get; set; }
+
+        [JsonProperty("user_key")]
+        public string Key { get; set; }
     }
 
     internal class PostsPagingModel

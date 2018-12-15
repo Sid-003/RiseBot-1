@@ -1,4 +1,5 @@
-﻿using ClashWrapper;
+﻿using BandWrapper;
+using ClashWrapper;
 using Discord;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
@@ -22,11 +23,16 @@ namespace RiseBot
         {
             var config = Config.Create("./config.json");
 
-            _database = await new DatabaseService().InitialiseAsync();
+            _database = await new DatabaseService().LoadGuildAsync();
 
             var clashClient = new ClashClient(new ClashClientConfig
             {
                 Token = config.ClashToken
+            });
+
+            var bandClient = new BandClient(new BandClientConfig
+            {
+                Token = config.BandToken
             });
             
             _services = new ServiceCollection()
@@ -42,6 +48,7 @@ namespace RiseBot
                     .AddTypeParsers())
                 .AddSingleton(_database)
                 .AddSingleton(clashClient)
+                .AddSingleton(bandClient)
                 .AddServices()
                 .BuildServiceProvider();
 
@@ -53,7 +60,20 @@ namespace RiseBot
                 return Task.CompletedTask;
             };
 
+            //TODO logging
             _client.Log += message =>
+            {
+                Console.WriteLine(message);
+                return Task.CompletedTask;
+            };
+
+            clashClient.Log += message =>
+            {
+                Console.WriteLine(message);
+                return Task.CompletedTask;
+            };
+
+            bandClient.Log += message =>
             {
                 Console.WriteLine(message);
                 return Task.CompletedTask;
@@ -68,7 +88,10 @@ namespace RiseBot
 
             await tcs.Task;
 
-            Task.Run(() => _services.GetService<WarReminderService>().StartService());
+#if !DEBUG
+            Task.Run(() => _services.GetService<WarReminderService>().StartServiceAsync());
+            Task.Run(() => _services.GetService<StartTimeService>().StartServiceAsync());
+#endif
 
             await Task.Delay(-1);
         }

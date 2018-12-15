@@ -14,15 +14,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Discord.Net.Core" Version="2.0.0-beta2-01018" />
-    <PackageReference Include="Discord.Net.WebSocket" Version="2.0.0-beta2-01018" />
+    <PackageReference Include="Discord.Net.Core" Version="2.0.0-beta2-01039" />
+    <PackageReference Include="Discord.Net.WebSocket" Version="2.0.0-beta2-01039" />
     <PackageReference Include="LiteDB" Version="4.1.4" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="2.2.0-preview3-35497" />
-    <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
-    <PackageReference Include="Qmmands" Version="1.0.2" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="3.0.0-preview.18572.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
+    <PackageReference Include="Qmmands" Version="1.0.3-nightly-00088" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\BandWrapper\BandWrapper.csproj" />
     <ProjectReference Include="..\ClashWrapper\ClashWrapper.csproj" />
   </ItemGroup>
 

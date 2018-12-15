@@ -37,7 +37,7 @@ namespace RiseBot.Services
             };
         }
 
-        public async Task StartService()
+        public async Task StartServiceAsync()
         {
             var previousState = WarState.Default;
             var remindersSet = false;

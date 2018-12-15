@@ -16,7 +16,7 @@ namespace BandWrapper
         private readonly HttpClient _httpClient;
         private readonly SemaphoreSlim _semaphore;
 
-        private const string BaseUrl = "https://openapi.band.us/v2";
+        private const string BaseUrl = "https://openapi.band.us";
 
         public RequestClient(BandClient client, BandClientConfig config)
         {
