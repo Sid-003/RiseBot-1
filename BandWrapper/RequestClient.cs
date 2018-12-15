@@ -51,9 +51,10 @@ namespace BandWrapper
 
                 await _client.InternalLogReceivedAsync($"GET {endpoint} {sw.ElapsedMilliseconds}ms");
 
-                if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<T>(content);
-
                 var model = JsonConvert.DeserializeObject<ErrorMessageModel>(content);
+
+                if(model.ResultCode == 1) return JsonConvert.DeserializeObject<T>(content);
+                
                 var error = new ErrorMessage(model);
 
                 await _client.InternalErrorReceivedAsync(error).ConfigureAwait(false);

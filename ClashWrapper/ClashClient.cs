@@ -8,6 +8,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using ClashWrapper.Entities.ClanMembers;
+using ClashWrapper.Models.ClanMembers;
 
 namespace ClashWrapper
 {
@@ -41,7 +43,7 @@ namespace ClashWrapper
 
             clanTag = clanTag[0] == '#' ? clanTag.Replace("#", "%23") : clanTag;
 
-            var model = await _request.SendAsync<CurrentWarModel>($"/clans/{clanTag}/currentwar")
+            var model = await _request.SendAsync<CurrentWarModel>($"/v1/clans/{clanTag}/currentwar")
                 .ConfigureAwait(false);
 
             return model is null ? null : new CurrentWar(model);
@@ -59,7 +61,7 @@ namespace ClashWrapper
             clanTag = clanTag[0] == '#' ? clanTag.Replace("#", "%23") : clanTag;
 
             var sb = new StringBuilder();
-            sb.Append($"/clans/{clanTag}/warlog?");
+            sb.Append($"/v1/clans/{clanTag}/warlog?");
 
             if (limit.HasValue)
                 sb.Append($"limit={limit.Value}&");
@@ -93,6 +95,25 @@ namespace ClashWrapper
             };
 
             return paged;
+        }
+
+        public async Task<IReadOnlyCollection<ClanMember>> GetClanMembersAsync(string clanTag)
+        {
+            if (string.IsNullOrWhiteSpace(clanTag))
+                throw new ArgumentNullException(clanTag);
+
+            clanTag = clanTag[0] == '#' ? clanTag.Replace("#", "%23") : clanTag;
+
+            var model = await _request.SendAsync<PagedClanMembersModel>($"/v1/clans/{clanTag}/members")
+                .ConfigureAwait(false);
+
+            if (model is null)
+                return ReadOnlyCollection<ClanMember>.EmptyCollection();
+
+            var collection = new ReadOnlyCollection<ClanMember>(model.ClanMembers.Select(x => new ClanMember(x)),
+                () => model.ClanMembers.Length);
+
+            return collection;
         }
     }
 }

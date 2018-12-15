@@ -71,6 +71,7 @@ namespace RiseBot.Services
         public async Task WriteEntityAsync(Guild guild)
         {
             await _writeSemaphore.WaitAsync();
+            Guild = guild;
 
             using (var db = new LiteDatabase(DatabaseDir))
             {

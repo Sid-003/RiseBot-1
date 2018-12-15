@@ -21,7 +21,7 @@ namespace ClashWrapper
         private const int MaxRequests = 5;
         private const long RequestTime = 5000;
 
-        private const string BaseUrl = "https://api.clashofclans.com/v1";
+        private const string BaseUrl = "https://api.clashofclans.com";
         
         public RequestClient(ClashClient client, ClashClientConfig config)
         {

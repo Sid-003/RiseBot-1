@@ -11,13 +11,17 @@ namespace RiseBot.Commands
         public SocketGuildUser User { get; }
         public SocketTextChannel Channel { get; }
 
-        public RiseContext(DiscordSocketClient client, SocketUserMessage message)
+        public bool IsEdit { get; }
+
+        public RiseContext(DiscordSocketClient client, SocketUserMessage message, bool isEdit = true)
         {
             Client = client;
             Message = message;
             Guild = (message.Channel as SocketGuildChannel)?.Guild;
             User = message.Author as SocketGuildUser;
             Channel = message.Channel as SocketTextChannel;
+
+            IsEdit = isEdit;
         }
     }
 }

@@ -4,8 +4,8 @@ namespace ClashWrapper.Models
 {
     internal class ErrorModel
     {
-        [JsonProperty("error")]
-        public string Error { get; set; }
+        [JsonProperty("message")]
+        public string Message { get; set; }
 
         [JsonProperty("reason")]
         public string Reason { get; set; }

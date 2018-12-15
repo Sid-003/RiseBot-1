@@ -5,7 +5,6 @@ using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
 using Pusharp;
 using Qmmands;
-using RiseBot.Commands;
 using RiseBot.Services;
 using System;
 using System.Reflection;
@@ -69,6 +68,33 @@ namespace RiseBot
                 return Task.CompletedTask;
             };
 
+            _client.UserJoined += user =>
+            {
+                Task.Run(async () =>
+                {
+                    var guild = _database.Guild;
+                    var dGuild = _client.GetGuild(guild.Id);
+
+                    var channel = dGuild.GetTextChannel(guild.WelcomeChannelId);
+                    var role = dGuild.GetRole(guild.NotVerifiedRoleId);
+
+                    await user.AddRoleAsync(role);
+
+                    var builder = new EmbedBuilder
+                    {
+                        Color = Color.Gold,
+                        ThumbnailUrl = dGuild.CurrentUser.GetAvatarUrl(),
+                        Title = "Welcome to the Discord!",
+                        Description = $"{user.GetDisplayName()} welcome to Reddit Rise!\n" +
+                                      "Please post a picture of your FWA base, " +
+                                      "and if you're feeling nice post your in game player tag (e.g. #YRQ2Y0UC) so we know who you are!"
+                    };
+
+                    await channel.SendMessageAsync(user.Mention, embed: builder.Build());
+                });
+                return Task.CompletedTask;
+            };
+
             var logger = _services.GetService<LogService>();
             
             _client.Log += message =>
@@ -78,18 +104,17 @@ namespace RiseBot
             };
 
             clashClient.Log += message => logger.LogAsync(Source.Clash, Severity.Verbose, message);
-            clashClient.Error += error => logger.LogAsync(Source.Clash, Severity.Error, error.Error);
+            clashClient.Error += error => logger.LogAsync(Source.Clash, Severity.Error, error.Message);
 
             bandClient.Log += message => logger.LogAsync(Source.Band, Severity.Verbose, message);
+            bandClient.Error += error => logger.LogAsync(Source.Band, Severity.Error, error.Message);
 
             pushClient.Log += message =>
             {
                 var (source, severity, lMessage) = LogFactory.FromPusharp(message);
                 return logger.LogAsync(source, severity, lMessage);
             };
-
-            _client.MessageReceived += HandleMessageAsync;
-
+            
             await pushClient.ConnectAsync();
 
             await _client.LoginAsync(TokenType.Bot, config.BotToken);
@@ -99,25 +124,14 @@ namespace RiseBot
 
             await tcs.Task;
 
+            _services.GetService<MessageService>();
+
 #if !DEBUG
             Task.Run(() => _services.GetService<WarReminderService>().StartServiceAsync());
             Task.Run(() => _services.GetService<StartTimeService>().StartServiceAsync());
 #endif
-
+            //TODO user joined
             await Task.Delay(-1);
-        }
-
-        private async Task HandleMessageAsync(SocketMessage arg)
-        {
-            if (!(arg is SocketUserMessage message) ||
-                string.IsNullOrWhiteSpace(message.Content)) return;
-
-            if (CommandUtilities.HasPrefix(message.Content, '~', true,
-                out var result))
-            {
-                var res = await _commands.ExecuteAsync(result,
-                    new RiseContext(_client, message), _services);
-            }
         }
     }
 }

@@ -33,7 +33,7 @@ namespace RiseBot.Services
 
             while (true)
             {
-                await Task.Delay(30000);
+                await Task.Delay(10000);
                 var posts = await _band.GetPostsAsync(BandKey, Locale, 3);
 
                 var lastPost = posts.First();
@@ -51,10 +51,11 @@ namespace RiseBot.Services
                 if(!(_client.GetChannel(guild.RepChannelId) is SocketTextChannel repChannel))
                     continue;
 
+                //TODO webhook
                 var builder = new EmbedBuilder
                 {
                     Title = post.Schedule is null ? "New FWA Post!" : post.Schedule.Name,
-                    Description = post.Content.Substring(0, 2048),
+                    Description = post.Content.Length > 2048 ? post.Content.Substring(0, 2048) : post.Content,
                     ThumbnailUrl = "https://upload.wikimedia.org/wikipedia/commons/3/30/2._BAND_Icon.png",
                     Color = new Color(0x11f711)
                 };

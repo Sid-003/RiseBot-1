@@ -1,58 +1,55 @@
-﻿using System;
-using System.Globalization;
+﻿using Discord.WebSocket;
+using Qmmands;
+using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Threading.Tasks;
-using Discord;
-using Discord.WebSocket;
-using Qmmands;
 
 namespace RiseBot.Commands.TypeParsers
 {
-    public class SocketGuildUserParser : TypeParser<SocketGuildUser>
+    public sealed class SocketUserParser : TypeParser<SocketGuildUser>
     {
-        public override Task<TypeParserResult<SocketGuildUser>> ParseAsync(string input, ICommandContext originContext, IServiceProvider _)
+        public override Task<TypeParserResult<SocketGuildUser>> ParseAsync(string value, ICommandContext ctx,
+            IServiceProvider provider)
         {
-            if(!(originContext is RiseContext context))
-                return Task.FromResult(new TypeParserResult<SocketGuildUser>("Invalid context type"));
-            
+            var context = ctx as RiseContext;
+
             var users = context.Guild.Users;
 
-            if (MentionUtils.TryParseUser(input, out var id))
+            SocketGuildUser user = null;
+            if (value.Length > 3 && value[0] == '<' && value[1] == '@' && value[value.Length - 1] == '>' && 
+                ulong.TryParse(value[2] == '!' ? value.Substring(3, value.Length - 4) : value.Substring(2, value.Length - 3), 
+                    out var id)
+                || ulong.TryParse(value, out id))
+                user = users.FirstOrDefault(x => x.Id == id);
+
+            if (user == null)
             {
-                return Task.FromResult(new TypeParserResult<SocketGuildUser>(context.Guild.GetUser(id)));
+                var hashIndex = value.LastIndexOf('#');
+                if (hashIndex != -1 && hashIndex + 5 == value.Length)
+                    user = users.FirstOrDefault(x =>
+                        x.Username == value.Substring(0, value.Length - 5) &&
+                        x.Discriminator == value.Substring(hashIndex + 1));
             }
 
-            if (ulong.TryParse(input, NumberStyles.None, CultureInfo.InvariantCulture, out id))
-            {
-                return Task.FromResult(new TypeParserResult<SocketGuildUser>(context.Guild.GetUser(id)));
-            }
+            if (user != null)
+                return Task.FromResult(new TypeParserResult<SocketGuildUser>(user));
 
-            var index = input.LastIndexOf('#');
+            IReadOnlyList<SocketGuildUser> matchingUsers = context.Guild != null
+                ? users.Where(x => x.Username == value || x.Nickname == value).ToImmutableArray()
+                : users.Where(x => x.Username == value).ToImmutableArray();
 
-            if (index >= 0)
-            {
-                var username = input.Substring(0, index);
+            if (matchingUsers.Count > 1)
+                return Task.FromResult(
+                    new TypeParserResult<SocketGuildUser>("Multiple matches found. Mention the user or use their ID."));
 
-                if (ushort.TryParse(input.Substring(index + 1), out var discim))
-                {
-                    var user = users.FirstOrDefault(x =>
-                        x.DiscriminatorValue == discim &&
-                        string.Equals(username, x.Username, StringComparison.OrdinalIgnoreCase));
+            if (matchingUsers.Count == 1)
+                user = matchingUsers[0];
 
-                    return Task.FromResult(new TypeParserResult<SocketGuildUser>(user));
-                }
-            }
-
-            var foundUser = users.FirstOrDefault(x =>
-                string.Equals(input, x.Username, StringComparison.OrdinalIgnoreCase));
-
-            if(!(foundUser is null))
-                return Task.FromResult(new TypeParserResult<SocketGuildUser>(foundUser));
-
-            foundUser = users.FirstOrDefault(x =>
-                string.Equals(input, x.Nickname, StringComparison.OrdinalIgnoreCase));
-
-            return Task.FromResult(!(foundUser is null) ? new TypeParserResult<SocketGuildUser>(foundUser) : new TypeParserResult<SocketGuildUser>("Failed to find user"));
+            return user == null
+                ? Task.FromResult(new TypeParserResult<SocketGuildUser>("No user found matching the input."))
+                : Task.FromResult(new TypeParserResult<SocketGuildUser>(user));
         }
     }
 }

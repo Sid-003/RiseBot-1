@@ -30,7 +30,7 @@ namespace RiseBot.Services
 
             _clash.Error += (message) =>
             {
-                if (message.Error != "inMaintenance")
+                if (message.Reason != "inMaintenance")
                     return Task.CompletedTask;
 
                 _cancellationTokenSource.Cancel(true);
@@ -114,6 +114,8 @@ namespace RiseBot.Services
                             
                             var guildMembers = guild.GuildMembers;
 
+                            currentWar = await _clash.GetCurrentWarAsync(ClanTag);
+
                             var needToAttack = currentWar.Clan.Members.Where(x => x.Attacks.Count < 2).ToArray();
 
                             var inDiscord = guildMembers.Where(guildMember =>
@@ -124,6 +126,8 @@ namespace RiseBot.Services
                             await channel.SendMessageAsync($"War ends in one hour!\n{mentions}");
 
                             await Task.Delay(endTime - DateTimeOffset.UtcNow, cancellationToken);
+
+                            currentWar = await _clash.GetCurrentWarAsync(ClanTag);
 
                             var missedAttacks = currentWar.Clan.Members.Where(x => x.Attacks.Count == 2).ToArray();
 

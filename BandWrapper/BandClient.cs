@@ -34,7 +34,7 @@ namespace BandWrapper
             int limit)
         {
             var model = await _request
-                .SendAsync<PostsModel>($"/v2/posts?band_key={bandKey}&locale={locale}&limit={limit}")
+                .SendAsync<PostsModel>($"/v2/band/posts?band_key={bandKey}&locale={locale}&limit={limit}")
                 .ConfigureAwait(false);
             var posts = model.ResultData.Posts.Select(x => new Entities.Posts.Post(x));
 
