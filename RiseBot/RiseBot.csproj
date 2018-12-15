@@ -23,6 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\Pusharp\Pusharp\Pusharp.csproj" />
     <ProjectReference Include="..\BandWrapper\BandWrapper.csproj" />
     <ProjectReference Include="..\ClashWrapper\ClashWrapper.csproj" />
   </ItemGroup>

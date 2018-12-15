@@ -95,6 +95,7 @@ namespace RiseBot.Services
 
                                 case LottoFailed lottoFailed:
                                     await channel.SendMessageAsync(lottoFailed.Reason);
+
                                     remindersSet = false;
                                     _cancellationTokenSource.Cancel(true);
                                     _cancellationTokenSource = new CancellationTokenSource();

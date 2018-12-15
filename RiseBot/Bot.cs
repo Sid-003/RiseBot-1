@@ -3,6 +3,7 @@ using ClashWrapper;
 using Discord;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
+using Pusharp;
 using Qmmands;
 using RiseBot.Commands;
 using RiseBot.Services;
@@ -34,6 +35,13 @@ namespace RiseBot
             {
                 Token = config.BandToken
             });
+
+            var pushClient = new PushBulletClient(new PushBulletClientConfig
+            {
+                LogLevel = LogLevel.Verbose,
+                Token = config.PushBulletToken,
+                UseCache = true
+            });
             
             _services = new ServiceCollection()
                 .AddSingleton(_client = new DiscordSocketClient(new DiscordSocketConfig
@@ -49,6 +57,7 @@ namespace RiseBot
                 .AddSingleton(_database)
                 .AddSingleton(clashClient)
                 .AddSingleton(bandClient)
+                .AddSingleton(pushClient)
                 .AddServices()
                 .BuildServiceProvider();
 
@@ -60,26 +69,28 @@ namespace RiseBot
                 return Task.CompletedTask;
             };
 
-            //TODO logging
+            var logger = _services.GetService<LogService>();
+            
             _client.Log += message =>
             {
-                Console.WriteLine(message);
-                return Task.CompletedTask;
+                var (source, severity, lMessage, exception) = LogFactory.FromDiscord(message);
+                return logger.LogAsync(source, severity, lMessage, exception);
             };
 
-            clashClient.Log += message =>
-            {
-                Console.WriteLine(message);
-                return Task.CompletedTask;
-            };
+            clashClient.Log += message => logger.LogAsync(Source.Clash, Severity.Verbose, message);
+            clashClient.Error += error => logger.LogAsync(Source.Clash, Severity.Error, error.Error);
 
-            bandClient.Log += message =>
+            bandClient.Log += message => logger.LogAsync(Source.Band, Severity.Verbose, message);
+
+            pushClient.Log += message =>
             {
-                Console.WriteLine(message);
-                return Task.CompletedTask;
+                var (source, severity, lMessage) = LogFactory.FromPusharp(message);
+                return logger.LogAsync(source, severity, lMessage);
             };
 
             _client.MessageReceived += HandleMessageAsync;
+
+            await pushClient.ConnectAsync();
 
             await _client.LoginAsync(TokenType.Bot, config.BotToken);
             await _client.StartAsync();
