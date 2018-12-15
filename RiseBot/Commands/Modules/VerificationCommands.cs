@@ -87,6 +87,21 @@ namespace RiseBot.Commands.Modules
             await SendMessageAsync("Tag has been added");
         }
 
+        [Command("removetag")]
+        public Task RemoveTagAsync(SocketGuildUser user, string userTag)
+        {
+            var guildMember = Guild.GuildMembers.FirstOrDefault(x => x.Id == user.Id);
+
+            if (guildMember is null)
+            {
+                return SendMessageAsync("User is not verified");
+            }
+
+            guildMember.Tags.Remove(userTag);
+
+            return SendMessageAsync("Tag has been removed");
+        }
+
         protected override Task AfterExecutedAsync(Command command)
         {
             return Database.WriteEntityAsync(Guild);

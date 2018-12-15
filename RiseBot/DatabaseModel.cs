@@ -28,7 +28,6 @@ namespace RiseBot
         public ulong StartTimeChannelId { get; set; }
         public ulong RepChannelId { get; set; }
         public ulong GeneralId { get; set; }
-
     }
 
     public class GuildMember : Entity

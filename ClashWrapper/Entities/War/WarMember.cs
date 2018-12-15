@@ -29,9 +29,14 @@ namespace ClashWrapper.Entities.War
         {
             get
             {
-                return _attacks ?? (_attacks = new ReadOnlyCollection<WarAttack>(
-                           _model.Attacks.Select(x => new WarAttack(x)),
-                           () => _model.Attacks.Length));
+                if (!(_attacks is null))
+                    return _attacks;
+
+                if (_model.Attacks is null)
+                    return _attacks = ReadOnlyCollection<WarAttack>.EmptyCollection();
+
+                return _attacks = new ReadOnlyCollection<WarAttack>(_model.Attacks.Select(x => new WarAttack(x)),
+                    () => _model.Attacks.Length);
             }
         }
     }

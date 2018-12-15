@@ -3,7 +3,9 @@ using Qmmands;
 using RiseBot.Results;
 using RiseBot.Services;
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace RiseBot.Commands.Modules
@@ -12,6 +14,8 @@ namespace RiseBot.Commands.Modules
     {
         public ClashClient Clash { get; set; }
         public StartTimeService Start { get; set; }
+        public CommandService CommandService { get; set; }
+        public IServiceProvider Services { get; set; }
 
         [Command("ping")]
         public Task PingAsync()
@@ -103,7 +107,65 @@ namespace RiseBot.Commands.Modules
 
             var missedList = string.Join('\n', missedAttackers.Select(x => x.Name));
 
-            await SendMessageAsync($"Members Ordered By Donations:\n{donationList}\n\nMissed Attackers:\n{missedList}");
+            await SendMessageAsync(
+                $"__**Members Ordered By Donations**__: \n{donationList}\n\n__**Missed Attackers**__:\n{missedList}");
+        }
+
+        [Command("clear", "c")]
+        public Task ClearAsync(int count = 5)
+            => Message.DeleteMessagesAsync(Context, count + 1);
+
+        [Command("discordcheck")]
+        public async Task DiscordCheck()
+        {
+            var clanMembers = await Clash.GetClanMembersAsync(Guild.ClanTag);
+            var discordMembers = Guild.GuildMembers;
+
+            var missingMembers = clanMembers.Where(clanMember => discordMembers.Any(discordMember =>
+                !discordMember.Tags.Any(x =>
+                    string.Equals(x, clanMember.Tag, StringComparison.InvariantCultureIgnoreCase)))).ToArray();
+
+            var missingList = string.Join('\n', missingMembers.Select(x => x.Name));
+
+            await SendMessageAsync(missingList);
+        }
+
+        [Command("help")]
+        public async Task HelpAsync()
+        {
+            var modules = CommandService.GetAllModules();
+            var commandMap = new Dictionary<Module, IEnumerable<Command>>();
+
+            foreach (var module in modules)
+            {
+                var result = await module.RunChecksAsync(Context, Services);
+
+                if (!result.IsSuccessful) continue;
+
+                var filtered = new List<Command>();
+
+                foreach (var command in module.Commands)
+                {
+                    result = await command.RunChecksAsync(Context, Services);
+
+                    if(result.IsSuccessful)
+                        filtered.Add(command);
+                }
+
+                commandMap[module] = filtered;
+            }
+
+            var sb = new StringBuilder();
+
+            foreach (var module in commandMap.Keys)
+            {
+                sb.AppendLine($"#{module.Name}");
+
+                foreach (var command in commandMap[module])
+                    sb.AppendLine($"\t-{command.FullAliases.First()} {string.Join(' ', command.Parameters.Select(x => $"[{x.Name}]"))}");
+            }
+
+            await SendMessageAsync($"```css\n{sb}```");
         }
     }
 }

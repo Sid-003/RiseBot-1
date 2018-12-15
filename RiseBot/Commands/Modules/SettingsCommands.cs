@@ -7,7 +7,7 @@ namespace RiseBot.Commands.Modules
 {
     [RequireOwner(Group = "perms")]
     [RequireRole("secretary, fwa representatives", "co-leaders", Group = "perms")]
-    public class SettingsModule : RiseBase
+    public class SettingsCommands : RiseBase
     {
         [Command("setprefix")]
         public Task SetPrefixAsync(char prefix)
@@ -77,6 +77,24 @@ namespace RiseBot.Commands.Modules
         {
             Guild.GeneralId = channel.Id;
             return SendMessageAsync("General channel has been set");
+        }
+
+        [Command("viewsettings")]
+        public Task ViewSettingsAsync()
+        {
+            var message = new[] {
+                $"Prefix: {Guild.Prefix}",
+                $"Clantag: {Guild.ClanTag}",
+                $"Welcome: {Guild.WelcomeChannelId}",
+                $"VerifiedRole: {Guild.VerifiedRoleId}",
+                $"VerifiedChannel: {Guild.WelcomeChannelId}",
+                $"NotVerified: {Guild.NotVerifiedRoleId}",
+                $"War: {Guild.WarChannelId}",
+                $"Start: {Guild.StartTimeChannelId}",
+                $"Rep: {Guild.RepChannelId}",
+                $"General: {Guild.GeneralId}"};
+
+            return SendMessageAsync(string.Join('\n', message));
         }
 
         protected override Task AfterExecutedAsync(Command command)

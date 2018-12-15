@@ -74,23 +74,7 @@ namespace RiseBot.Services
             if (!(originalContext is RiseContext context))
                 return;
 
-            switch (result.CommandExecutionStep)
-            {
-                case CommandExecutionStep.Checks:
-                    break;
-
-                case CommandExecutionStep.ArgumentParsing:
-                    break;
-
-                case CommandExecutionStep.TypeParsing:
-                    break;
-
-                case CommandExecutionStep.BeforeExecuted:
-                    break;
-
-                case CommandExecutionStep.Command:
-                    break;
-            }
+            await SendMessageAsync(context, result.Reason);
 
             if (!string.IsNullOrWhiteSpace(result.Exception.ToString()))
                 await _logger.LogAsync(Source.Commands, Severity.Error, string.Empty, result.Exception);

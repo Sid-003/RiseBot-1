@@ -4,6 +4,7 @@ using Discord;
 using Discord.WebSocket;
 using System.Linq;
 using System.Threading.Tasks;
+using Discord.Webhook;
 
 namespace RiseBot.Services
 {
@@ -13,6 +14,7 @@ namespace RiseBot.Services
         private readonly DiscordSocketClient _client;
         private readonly BandClient _band;
         private readonly DatabaseService _database;
+        private readonly DiscordWebhookClient _webhook;
 
         private const string BandKey = "AADMPvOeSi6era-iwqaVkEtP";
         private const string Locale = "en_GB";
@@ -33,7 +35,7 @@ namespace RiseBot.Services
 
             while (true)
             {
-                await Task.Delay(10000);
+                await Task.Delay(30000);
                 var posts = await _band.GetPostsAsync(BandKey, Locale, 3);
 
                 var lastPost = posts.First();
@@ -93,6 +95,14 @@ namespace RiseBot.Services
                                 $"{_client.GetUser(x.Key).Mention} : **Start**, {x.Value.Item1:t} - **End**,{x.Value.Item2:t}")));
 
                 await startChannel.SendMessageAsync("@everyone", embed: builder.Build());
+
+#pragma warning disable 4014
+                Task.Run(async () =>
+                {
+                    await Task.Delay(start - DateTimeOffset.UtcNow - TimeSpan.FromMinutes(10));
+                    await repChannel.SendMessageAsync("<@&356176442716848132> search is in 10 minutes!");
+                });
+#pragma warning restore 4014
             }
         }
 

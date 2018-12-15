@@ -130,7 +130,6 @@ namespace RiseBot
             Task.Run(() => _services.GetService<WarReminderService>().StartServiceAsync());
             Task.Run(() => _services.GetService<StartTimeService>().StartServiceAsync());
 #endif
-            //TODO user joined
             await Task.Delay(-1);
         }
     }
