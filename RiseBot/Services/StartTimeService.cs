@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using BandWrapper;
 using Discord;
 using Discord.WebSocket;
@@ -88,7 +87,7 @@ namespace RiseBot.Services
                         Timestamp = DateTimeOffset.UtcNow
                     }
                     .AddField("Sync Times!",
-                        string.Join("\n",
+                        string.Join('\n',
                             times.Select(x =>
                                 $"{_client.GetUser(x.Key).Mention} : **Start**, {x.Value.Item1:t} - **End**,{x.Value.Item2:t}")));
 
