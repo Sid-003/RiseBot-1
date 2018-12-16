@@ -1,6 +1,8 @@
 ﻿using ClashWrapper.Entities;
+using ClashWrapper.Entities.ClanMembers;
 using ClashWrapper.Entities.War;
 using ClashWrapper.Entities.WarLog;
+using ClashWrapper.Models.ClanMembers;
 using ClashWrapper.Models.War;
 using ClashWrapper.Models.WarLog;
 using System;
@@ -8,8 +10,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using ClashWrapper.Entities.ClanMembers;
-using ClashWrapper.Models.ClanMembers;
 
 namespace ClashWrapper
 {
@@ -26,14 +26,14 @@ namespace ClashWrapper
 
         internal Task InternalErrorReceivedAsync(ErrorMessage message)
         {
-            return Error is null ? Task.CompletedTask : Error.Invoke(message);
+            return Error is null ? Task.CompletedTask : Error(message);
         }
 
         public event Func<string, Task> Log;
 
         internal Task InternalLogReceivedAsync(string message)
         {
-            return Log is null ? Task.CompletedTask : Log.Invoke(message);
+            return Log is null ? Task.CompletedTask : Log(message);
         }
 
         public async Task<CurrentWar> GetCurrentWarAsync(string clanTag)

@@ -14,11 +14,19 @@ namespace RiseBot.Commands.Modules
     public class VerificationCommands : RiseBase
     {
         public ClashClient Clash { get; set; }
-
+        
         [Command("verify")]
         [RunMode(RunMode.Parallel)]
         public async Task VerifyMemberAsync(SocketGuildUser user, string userTag)
         {
+            var foundMember = Guild.GuildMembers.Any(x => x.Id == user.Id);
+
+            if (foundMember)
+            {
+                await SendMessageAsync("This user is already verified");
+                return;
+            }
+
             var members = await Clash.GetClanMembersAsync(Guild.ClanTag);
 
             var clanMember = members.FirstOrDefault(x =>
@@ -40,7 +48,7 @@ namespace RiseBot.Commands.Modules
                 }
             });
 
-            await user.ModifyAsync(x => x.Nickname = clanMember.Name);
+            _ = user.ModifyAsync(x => x.Nickname = clanMember.Name);
 
             var verifiedRole = Context.Guild.GetRole(Guild.VerifiedRoleId);
             await user.AddRoleAsync(verifiedRole);
@@ -56,7 +64,20 @@ namespace RiseBot.Commands.Modules
 
             var generalChannel = Context.Guild.GetTextChannel(Guild.GeneralId);
 
-            await generalChannel.SendMessageAsync($"{user.Mention} welcome to Reddit Rise! Now that you are a verified member you have access to our channels!");
+            await generalChannel.SendMessageAsync(
+                $"{user.Mention} welcome to Reddit Rise! Now that you are a verified member you have access to our channels!");
+        }
+
+        [Command("notverified")]
+        public Task NotVerifiedAsync()
+        {
+            var guildMembers = Guild.GuildMembers;
+            var notVerified = (from user in Context.Guild.Users.Where(x => !x.IsBot)
+                let foundMember = guildMembers.Any(x => x.Id == user.Id)
+                where !foundMember
+                select user).ToList();
+
+            return SendMessageAsync(string.Join('\n', notVerified.Select(x => x.GetDisplayName())));
         }
 
         [Command("addtag")]

@@ -20,14 +20,14 @@ namespace BandWrapper
 
         internal Task InternalErrorReceivedAsync(ErrorMessage error)
         {
-            return Error is null ? Task.CompletedTask : Error.Invoke(error);
+            return Error is null ? Task.CompletedTask : Error(error);
         }
 
         public event Func<string, Task> Log;
 
         internal Task InternalLogReceivedAsync(string message)
         {
-            return Log is null ? Task.CompletedTask : Log.Invoke(message);
+            return Log is null ? Task.CompletedTask : Log(message);
         }
 
         public async Task<IReadOnlyCollection<Entities.Posts.Post>> GetPostsAsync(string bandKey, string locale,

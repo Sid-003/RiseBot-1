@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using ClashWrapper.Entities.ClanMembers;
 
 namespace RiseBot.Commands.Modules
 {
@@ -16,7 +17,7 @@ namespace RiseBot.Commands.Modules
         public StartTimeService Start { get; set; }
         public CommandService CommandService { get; set; }
         public IServiceProvider Services { get; set; }
-
+        
         [Command("ping")]
         public Task PingAsync()
         {
@@ -166,6 +167,29 @@ namespace RiseBot.Commands.Modules
             }
 
             await SendMessageAsync($"```css\n{sb}```");
+        }
+
+        [Command("mytags")]
+        [RunMode(RunMode.Parallel)]
+        public async Task GetTagsAsync()
+        {
+            var guildMember = Guild.GuildMembers.FirstOrDefault(x => x.Id == Context.User.Id);
+
+            if (guildMember is null)
+            {
+                await SendMessageAsync("You aren't verified");
+                return;
+            }
+
+            var clanMembers = await Clash.GetClanMembersAsync(Guild.ClanTag);
+
+            var matchingTags = (from tag in guildMember.Tags
+                let foundMember = clanMembers.FirstOrDefault(x => string.Equals(x.Tag, tag, StringComparison.InvariantCultureIgnoreCase))
+                select foundMember is null
+                    ? $"{tag} - Not in clan"
+                    : $"{foundMember.Tag} - {foundMember.Name}").ToList();
+
+            await SendMessageAsync(string.Join('\n', matchingTags));
         }
     }
 }

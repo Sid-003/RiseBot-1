@@ -64,11 +64,17 @@ namespace RiseBot.Services
             if (CommandUtilities.HasPrefix(message.Content, prefix, out var output) || 
                 message.HasMentionPrefix(_client.CurrentUser, out output))
             {
-                await _commands.ExecuteAsync(output, context, _services);
+                var result = await _commands.ExecuteAsync(output, context, _services);
+
+                if (!result.IsSuccessful)
+                {
+                    var failed = result as FailedResult;
+
+                    await SendMessageAsync(context, failed?.Reason);
+                }
             }
         }
         
-        //TODO something with this
         private async Task CommandErroredAsync(ExecutionFailedResult result, ICommandContext originalContext, IServiceProvider services)
         {
             if (!(originalContext is RiseContext context))
