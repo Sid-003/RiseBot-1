@@ -28,6 +28,8 @@ namespace RiseBot.Services
             _database = database;
             _start = start;
 
+            _cancellationTokenSource = new CancellationTokenSource();
+
             _clash.Error += (message) =>
             {
                 if (message.Reason != "inMaintenance")
@@ -49,6 +51,9 @@ namespace RiseBot.Services
                 await Task.Delay(30000);
                 var currentWar = await _clash.GetCurrentWarAsync(ClanTag);
 
+                if (currentWar is null)
+                    continue;
+
                 if (previousState == currentWar.State)
                     continue;
 
@@ -67,84 +72,90 @@ namespace RiseBot.Services
 #pragma warning disable 4014
                 Task.Run(async () =>
 #pragma warning restore 4014
+                {
+                    try
                     {
-                        try
+                        var guild = _database.Guild;
+                        var channelId = guild.WarChannelId;
+
+                        if (!(_client.GetChannel(channelId) is SocketTextChannel channel))
+                            return;
+
+                        var result = await Utilites.CalculateWarWinnerAsync(_clash, ClanTag);
+
+                        switch (result)
                         {
-                            await Task.Delay(startTime - DateTimeOffset.UtcNow, cancellationToken);
+                            case LottoDraw lottoDraw:
+                                var highSync = _start.GetSync();
+                                var highTagIsClanTag = lottoDraw.HighSyncWinnerTag == lottoDraw.ClanTag;
+                                var highSyncWinner =
+                                    highTagIsClanTag ? lottoDraw.ClanName : lottoDraw.OpponentName;
+                                var lowSyncWinner =
+                                    highTagIsClanTag ? lottoDraw.OpponentName : lottoDraw.ClanName;
+                                var sync = highSync ? "high" : "low";
+                                var winner = highSync ? highSyncWinner : lowSyncWinner;
 
-                            var guild = _database.Guild;
-                            var channelId = guild.WarChannelId;
+                                await channel.SendMessageAsync($"It is a {sync}-sync war and {winner} wins!\n```css\n{result.WarLogComparison}```");
+                                break;
 
-                            if (!(_client.GetChannel(channelId) is SocketTextChannel channel))
-                                return;
+                            case LottoFailed lottoFailed:
+                                await channel.SendMessageAsync(lottoFailed.Reason);
 
-                            var result = await Utilites.CalculateWarWinnerAsync(_clash, ClanTag);
+                                remindersSet = false;
+                                _cancellationTokenSource.Cancel(true);
+                                _cancellationTokenSource = new CancellationTokenSource();
+                                break;
 
-                            switch (result)
-                            {
-                                case LottoDraw lottoDraw:
-                                    var highSync = _start.GetSync();
-                                    var highTagIsClanTag = lottoDraw.HighSyncWinnerTag == lottoDraw.ClanTag;
-                                    var highSyncWinner = highTagIsClanTag ? lottoDraw.ClanName : lottoDraw.OpponentName;
-                                    var lowSyncWinner = highTagIsClanTag ? lottoDraw.OpponentName : lottoDraw.ClanName;
-                                    var sync = highSync ? "high" : "low";
-                                    var winner = highSync ? highSyncWinner : lowSyncWinner;
+                            case LottoResult lottoResult:
+                                var lottoWinner = lottoResult.ClanWin
+                                    ? $"{lottoResult.ClanName}"
+                                    : $"{lottoResult.OpponentName}";
 
-                                    await channel.SendMessageAsync($"It is a {sync}-sync war and {winner} wins!");
-                                    break;
-
-                                case LottoFailed lottoFailed:
-                                    await channel.SendMessageAsync(lottoFailed.Reason);
-
-                                    remindersSet = false;
-                                    _cancellationTokenSource.Cancel(true);
-                                    _cancellationTokenSource = new CancellationTokenSource();
-                                    break;
-
-                                case LottoResult lottoResult:
-                                    var lottoWinner = lottoResult.ClanWin
-                                        ? $"{lottoResult.ClanName}"
-                                        : $"{lottoResult.OpponentName}";
-
-                                    await channel.SendMessageAsync($"It is {lottoWinner}'s win!");
-                                    break;
-                            }
-
-                            await Task.Delay(endTime - DateTimeOffset.UtcNow.AddHours(1), cancellationToken);
-                            
-                            var guildMembers = guild.GuildMembers;
-
-                            currentWar = await _clash.GetCurrentWarAsync(ClanTag);
-
-                            var needToAttack = currentWar.Clan.Members.Where(x => x.Attacks.Count < 2).ToArray();
-
-                            var inDiscord = guildMembers.Where(guildMember =>
-                                guildMember.Tags.Any(tag => needToAttack.Any(x => x.Tag == tag))).ToArray();
-
-                            var mentions = string.Join('\n', inDiscord.Select(x => $"{_client.GetUser(x.Id).Mention} you need to attack!"));
-
-                            await channel.SendMessageAsync($"War ends in one hour!\n{mentions}");
-
-                            await Task.Delay(endTime - DateTimeOffset.UtcNow, cancellationToken);
-
-                            currentWar = await _clash.GetCurrentWarAsync(ClanTag);
-
-                            var missedAttacks = currentWar.Clan.Members.Where(x => x.Attacks.Count == 2).ToArray();
-
-                            inDiscord = guildMembers.Where(guildMember =>
-                                guildMember.Tags.Any(tag => missedAttacks.Any(x => x.Tag == tag))).ToArray();
-
-                            mentions = string.Join('\n', inDiscord.Select(x => $"{_client.GetUser(x.Id).Mention} you missed your attacks!"));
-
-                            await channel.SendMessageAsync($"War has ended!\n{mentions}");
-                        }
-                        catch (TaskCanceledException)
-                        {
-                            remindersSet = false;
-                            previousState = WarState.Default;
+                                await channel.SendMessageAsync($"It is {lottoWinner}'s win!\n```css\n{result.WarLogComparison}```");
+                                break;
                         }
 
-                    },
+                        await Task.Delay(startTime - DateTimeOffset.UtcNow, cancellationToken);
+
+                        await channel.SendMessageAsync("War has started!");
+
+                        await Task.Delay(endTime - DateTimeOffset.UtcNow.AddHours(1), cancellationToken);
+
+                        var guildMembers = guild.GuildMembers;
+
+                        currentWar = await _clash.GetCurrentWarAsync(ClanTag);
+
+                        var needToAttack = currentWar.Clan.Members.Where(x => x.Attacks.Count < 2).ToArray();
+
+                        var inDiscord = guildMembers.Where(guildMember =>
+                            guildMember.Tags.Any(tag => needToAttack.Any(x => x.Tag == tag))).ToArray();
+
+                        var mentions = string.Join('\n',
+                            inDiscord.Select(x => $"{_client.GetUser(x.Id).Mention} you need to attack!"));
+
+                        await channel.SendMessageAsync($"War ends in one hour!\n{mentions}");
+
+                        await Task.Delay(endTime - DateTimeOffset.UtcNow, cancellationToken);
+
+                        currentWar = await _clash.GetCurrentWarAsync(ClanTag);
+
+                        var missedAttacks = currentWar.Clan.Members.Where(x => x.Attacks.Count == 2).ToArray();
+
+                        inDiscord = guildMembers.Where(guildMember =>
+                            guildMember.Tags.Any(tag => missedAttacks.Any(x => x.Tag == tag))).ToArray();
+
+                        mentions = string.Join('\n',
+                            inDiscord.Select(x => $"{_client.GetUser(x.Id).Mention} you missed your attacks!"));
+
+                        await channel.SendMessageAsync($"War has ended!\n{mentions}");
+                    }
+                    catch (TaskCanceledException)
+                    {
+                        remindersSet = false;
+                        previousState = WarState.Default;
+                    }
+
+                },
                     cancellationToken);
             }
         }

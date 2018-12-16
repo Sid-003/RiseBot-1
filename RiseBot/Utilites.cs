@@ -4,6 +4,7 @@ using RiseBot.Results;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace RiseBot
@@ -37,8 +38,13 @@ namespace RiseBot
 
             var clanWarLog = (await client.GetWarLogAsync(clanTag, 10)).Entity;
 
-            var clanTotal = CalculateTotal(clanWarLog);
-            var opponentTotal = CalculateTotal(opponentWarLog);
+            var trimmedClanLog = TrimWarLog(clanWarLog).ToArray();
+            var trimmedOpponentLog = TrimWarLog(opponentWarLog).ToArray();
+
+            var clanTotal = trimmedClanLog.Count(x => x.Result == WarResult.Lose);
+            var opponentTotal = trimmedOpponentLog.Count(x => x.Result == WarResult.Lose);
+
+            var comparison = BuildWarLongComparison(trimmedClanLog, trimmedOpponentLog);
 
             var draw = clanTotal == opponentTotal;
 
@@ -50,7 +56,8 @@ namespace RiseBot
                     ClanTag = clanTag,
                     OpponentName = currentWar.Opponent.Name,
                     OpponentTag = opponentTag,
-                    ClanWin = clanTotal > opponentTotal
+                    ClanWin = clanTotal > opponentTotal,
+                    WarLogComparison = comparison
                 };
             }
 
@@ -74,16 +81,41 @@ namespace RiseBot
                 ClanTag = clanTag,
                 OpponentName = currentWar.Opponent.Name,
                 OpponentTag = opponentTag,
-                HighSyncWinnerTag = result < 0 ? clanTag : opponentTag
+                HighSyncWinnerTag = result < 0 ? clanTag : opponentTag,
+                WarLogComparison = comparison
             };
         }
 
-        private static int CalculateTotal(IEnumerable<WarLog> warLog)
+        public static IEnumerable<WarLog> TrimWarLog(IEnumerable<WarLog> warLog)
         {
             var filtered = warLog.Where(x => x.Opponent.Level > 0);
             var trimmed = filtered.Take(7);
 
-            return trimmed.Count(x => x.Result == WarResult.Lose);
+            return trimmed;
+        }
+
+        public static string BuildWarLongComparison(WarLog[] clanWarLog, WarLog[] opponentWarLog)
+        {
+            var sb = new StringBuilder();
+
+            var clan = clanWarLog[0].Clan;
+            var opponent = opponentWarLog[0].Clan;
+
+            sb.AppendLine($"{clan.Name}{clan.Tag} VS {opponent.Name}{opponent.Tag}");
+            sb.AppendLine();
+
+            for (var i = 0; i < 7; i++)
+            {
+                var clanRes = clanWarLog[i].Result;
+                var oppRes = opponentWarLog[i].Result;
+
+                var clanStr = clanRes == WarResult.Win ? $"{"(WIN)", -6}" : "[LOSS]";
+                var oppStr = oppRes == WarResult.Win ? $"{"(WIN)",-6}" : "[LOSS]";
+
+                sb.AppendLine($"{clanStr}\t\t{oppStr}");
+            }
+
+            return sb.ToString();
         }
     }
 }

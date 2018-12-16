@@ -7,6 +7,8 @@
 
         public string OpponentName { get; set; }
         public string OpponentTag { get; set; }
+
+        public string WarLogComparison { get; set; }
     }
 
     public class LottoFailed : BaseLottoResult

@@ -12,7 +12,10 @@ namespace BandWrapper.Entities.Post
         }
 
         private Schedule _schedule;
-        public Schedule Schedule => _schedule ?? (_schedule = new Schedule(_model.ResultData.Post.Schedule));
+
+        public Schedule Schedule => _model.ResultData.Post.Schedule is null
+            ? null
+            : _schedule ?? (_schedule = new Schedule(_model.ResultData.Post.Schedule));
 
         public string Content => _model.ResultData.Post.Content;
     }

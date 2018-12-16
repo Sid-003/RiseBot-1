@@ -57,21 +57,29 @@ namespace ClashWrapper
             var sw = new Stopwatch();
             sw.Start();
 
-            using (var response = await _httpClient.SendAsync(request).ConfigureAwait(false))
+            try
             {
-                _semaphore.Release();
-                sw.Stop();
+                using (var response = await _httpClient.SendAsync(request).ConfigureAwait(false))
+                {
+                    _semaphore.Release();
+                    sw.Stop();
 
-                var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                    var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
-                await _client.InternalLogReceivedAsync($"GET {endpoint} {sw.ElapsedMilliseconds}ms");
+                    await _client.InternalLogReceivedAsync($"GET {endpoint} {sw.ElapsedMilliseconds}ms");
 
-                if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<T>(content);
+                    if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<T>(content);
 
-                var model = JsonConvert.DeserializeObject<ErrorModel>(content);
-                var error = new ErrorMessage(model);
+                    var model = JsonConvert.DeserializeObject<ErrorModel>(content);
+                    var error = new ErrorMessage(model);
 
-                await _client.InternalErrorReceivedAsync(error);
+                    await _client.InternalErrorReceivedAsync(error);
+                    return default;
+                }
+            }
+            catch (Exception ex)
+            {
+                await _client.InternalLogReceivedAsync(ex.ToString());
                 return default;
             }
         }

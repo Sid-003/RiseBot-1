@@ -42,22 +42,30 @@ namespace BandWrapper
             var sw = new Stopwatch();
             sw.Start();
 
-            using (var response = await _httpClient.SendAsync(request).ConfigureAwait(false))
+            try
             {
-                _semaphore.Release();
-                sw.Stop();
+                using (var response = await _httpClient.SendAsync(request).ConfigureAwait(false))
+                {
+                    _semaphore.Release();
+                    sw.Stop();
 
-                var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                    var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
-                await _client.InternalLogReceivedAsync($"GET {endpoint} {sw.ElapsedMilliseconds}ms");
+                    await _client.InternalLogReceivedAsync($"GET {endpoint} {sw.ElapsedMilliseconds}ms");
 
-                var model = JsonConvert.DeserializeObject<ErrorMessageModel>(content);
+                    var model = JsonConvert.DeserializeObject<ErrorMessageModel>(content);
 
-                if(model.ResultCode == 1) return JsonConvert.DeserializeObject<T>(content);
-                
-                var error = new ErrorMessage(model);
+                    if (model.ResultCode == 1) return JsonConvert.DeserializeObject<T>(content);
 
-                await _client.InternalErrorReceivedAsync(error).ConfigureAwait(false);
+                    var error = new ErrorMessage(model);
+
+                    await _client.InternalErrorReceivedAsync(error).ConfigureAwait(false);
+                    return default;
+                }
+            }
+            catch (Exception ex)
+            {
+                await _client.InternalLogReceivedAsync(ex.ToString());
                 return default;
             }
         }

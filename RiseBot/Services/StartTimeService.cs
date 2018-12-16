@@ -40,6 +40,9 @@ namespace RiseBot.Services
                     await Task.Delay(30000);
                     var posts = await _band.GetPostsAsync(BandKey, Locale, 3);
 
+                    if(posts is null)
+                        continue;
+
                     var lastPost = posts.First();
 
                     if (lastPostKey == lastPost.Key && handledPost)
@@ -51,6 +54,9 @@ namespace RiseBot.Services
                     var guild = _database.Guild;
 
                     var post = await _band.GetPostAsync(BandKey, lastPostKey);
+
+                    if(post is null)
+                        continue;
 
                     if (!(_client.GetChannel(guild.RepChannelId) is SocketTextChannel repChannel))
                         continue;

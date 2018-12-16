@@ -35,6 +35,12 @@ namespace RiseBot.Commands.Modules
         public Task SetTimezoneAsync(double timezone)
         {
             var rep = Guild.FWAReps.FirstOrDefault(x => x.Id == Context.User.Id);
+
+            if (rep is null)
+            {
+                return SendMessageAsync("You are not a rep");
+            }
+
             rep.TimeZone = timezone;
 
             return SendMessageAsync("Timezone has been set");
