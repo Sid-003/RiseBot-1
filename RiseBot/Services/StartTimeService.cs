@@ -19,6 +19,8 @@ namespace RiseBot.Services
         private const string BandKey = "AADMPvOeSi6era-iwqaVkEtP";
         private const string Locale = "en_GB";
 
+        private static TimeSpan Period => TimeSpan.FromHours(1);
+
         private bool _highSync = true;
 
         public StartTimeService(DiscordSocketClient client, BandClient band, DatabaseService database)
@@ -37,11 +39,14 @@ namespace RiseBot.Services
             {
                 try
                 {
-                    await Task.Delay(30000);
+                    await Task.Delay(Period);
                     var posts = await _band.GetPostsAsync(BandKey, Locale, 3);
 
-                    if(posts is null)
+                    if(posts is null || posts.Count == 0)
+                    {
+                        handledPost = false;
                         continue;
+                    }
 
                     var lastPost = posts.First();
 
@@ -56,7 +61,10 @@ namespace RiseBot.Services
                     var post = await _band.GetPostAsync(BandKey, lastPostKey);
 
                     if(post is null)
+                    {
+                        handledPost = false;
                         continue;
+                    }
 
                     if (!(_client.GetChannel(guild.RepChannelId) is SocketTextChannel repChannel))
                         continue;

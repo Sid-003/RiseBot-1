@@ -82,7 +82,7 @@ namespace RiseBot
 
                     var builder = new EmbedBuilder
                     {
-                        Color = Color.Gold,
+                        Color = new Color(0x11f711),
                         ThumbnailUrl = dGuild.CurrentUser.GetAvatarUrl(),
                         Title = "Welcome to the Discord!",
                         Description = $"{user.GetDisplayName()} welcome to Reddit Rise!\n" +

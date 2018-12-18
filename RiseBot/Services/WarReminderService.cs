@@ -95,7 +95,7 @@ namespace RiseBot.Services
                                 var sync = highSync ? "high" : "low";
                                 var winner = highSync ? highSyncWinner : lowSyncWinner;
 
-                                await channel.SendMessageAsync($"It is a {sync}-sync war and {winner} wins!\n```css\n{result.WarLogComparison}```");
+                                await channel.SendMessageAsync($"```css\nIt is a {sync}-sync war and {winner} wins!\n{result.WarLogComparison}```");
                                 break;
 
                             case LottoFailed lottoFailed:
@@ -111,15 +111,21 @@ namespace RiseBot.Services
                                     ? $"{lottoResult.ClanName}"
                                     : $"{lottoResult.OpponentName}";
 
-                                await channel.SendMessageAsync($"It is {lottoWinner}'s win!\n```css\n{result.WarLogComparison}```");
+                                await channel.SendMessageAsync($"```css\nIt is {lottoWinner}'s win!\n{result.WarLogComparison}```");
                                 break;
                         }
 
-                        await Task.Delay(startTime - DateTimeOffset.UtcNow, cancellationToken);
+                        var delay = startTime - DateTimeOffset.UtcNow;
+                        delay = delay < TimeSpan.Zero ? TimeSpan.Zero : delay;
+
+                        await Task.Delay(delay, cancellationToken);
 
                         await channel.SendMessageAsync("War has started!");
 
-                        await Task.Delay(endTime - DateTimeOffset.UtcNow.AddHours(1), cancellationToken);
+                        delay = endTime - DateTimeOffset.UtcNow.AddHours(1);
+                        delay = delay < TimeSpan.Zero ? TimeSpan.Zero : delay;
+
+                        await Task.Delay(delay, cancellationToken);
 
                         var guildMembers = guild.GuildMembers;
 
@@ -135,7 +141,10 @@ namespace RiseBot.Services
 
                         await channel.SendMessageAsync($"War ends in one hour!\n{mentions}");
 
-                        await Task.Delay(endTime - DateTimeOffset.UtcNow, cancellationToken);
+                        delay = endTime - DateTimeOffset.UtcNow;
+                        delay = delay < TimeSpan.Zero ? TimeSpan.Zero : delay;
+
+                        await Task.Delay(delay, cancellationToken);
 
                         currentWar = await _clash.GetCurrentWarAsync(ClanTag);
 

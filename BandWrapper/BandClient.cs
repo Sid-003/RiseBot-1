@@ -36,6 +36,10 @@ namespace BandWrapper
             var model = await _request
                 .SendAsync<PostsModel>($"/v2/band/posts?band_key={bandKey}&locale={locale}&limit={limit}")
                 .ConfigureAwait(false);
+
+            if (model is null)
+                return ReadOnlyCollection<Entities.Posts.Post>.EmptyCollection();
+
             var posts = model.ResultData.Posts.Select(x => new Entities.Posts.Post(x));
 
             return new ReadOnlyCollection<Entities.Posts.Post>(posts, () => model.ResultData.Posts.Length);
@@ -49,5 +53,8 @@ namespace BandWrapper
 
             return new Entities.Post.Post(model);
         }
+
+        public int GetQuota()
+            => _request.GetQuota();
     }
 }

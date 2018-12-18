@@ -18,6 +18,9 @@ namespace BandWrapper
 
         private const string BaseUrl = "https://openapi.band.us";
 
+        private int _maxQuota;
+        private int _quota;
+
         public RequestClient(BandClient client, BandClientConfig config)
         {
             _client = client;
@@ -46,6 +49,7 @@ namespace BandWrapper
             {
                 using (var response = await _httpClient.SendAsync(request).ConfigureAwait(false))
                 {
+                    _quota++;
                     _semaphore.Release();
                     sw.Stop();
 
@@ -59,6 +63,12 @@ namespace BandWrapper
 
                     var error = new ErrorMessage(model);
 
+                    if (error.Message?.IndexOf("quota") != -1)
+                    {
+                        _maxQuota = _quota >= _maxQuota ? _quota : _maxQuota;
+                        _quota = 0;
+                    }
+
                     await _client.InternalErrorReceivedAsync(error).ConfigureAwait(false);
                     return default;
                 }
@@ -69,5 +79,8 @@ namespace BandWrapper
                 return default;
             }
         }
+
+        public int GetQuota()
+            => _maxQuota;
     }
 }

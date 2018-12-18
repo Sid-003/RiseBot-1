@@ -1,4 +1,5 @@
-﻿using Qmmands;
+﻿using BandWrapper;
+using Qmmands;
 using RiseBot.Commands.Checks;
 using System.Linq;
 using System.Threading.Tasks;
@@ -8,6 +9,8 @@ namespace RiseBot.Commands.Modules
     [RequireOwner]
     public class CasinoCommands : RiseBase
     {
+        public BandClient Band { get; set; }
+
         //TODO eval
 
         [Command("dbcleanse")]
@@ -28,6 +31,12 @@ namespace RiseBot.Commands.Modules
             }
 
             return SendMessageAsync($"Successfully cleansed {removed} entries");
+        }
+
+        [Command("getquota")]
+        public Task GetQuotaAsync()
+        {
+            return SendMessageAsync($"{Band.GetQuota()}");
         }
     }
 }

@@ -30,7 +30,7 @@ namespace RiseBot.Commands.Modules
                     var sync = highSync ? "high" : "low";
                     var winner = highSync ? highSyncWinner : lowSyncWinner;
 
-                    await SendMessageAsync($"It is a {sync}-sync war and {winner} wins!\n```css\n{result.WarLogComparison}```");
+                    await SendMessageAsync($"```css\nIt is a {sync}-sync war and {winner} wins!\n{result.WarLogComparison}```");
                     break;
 
                 case LottoFailed lottoFailed:
@@ -42,7 +42,7 @@ namespace RiseBot.Commands.Modules
                         ? $"{lottoResult.ClanName}"
                         : $"{lottoResult.OpponentName}";
 
-                    await SendMessageAsync($"It is {lottoWinner}'s win!\n```css\n{result.WarLogComparison}```");
+                    await SendMessageAsync($"```css\nIt is {lottoWinner}'s win!\n{result.WarLogComparison}```");
                     break;
             }
         }
