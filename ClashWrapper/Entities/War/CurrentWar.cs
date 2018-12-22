@@ -24,6 +24,9 @@ namespace ClashWrapper.Entities.War
                     case "inWar":
                         return WarState.InWar;
 
+                    case "warEnded":
+                        return WarState.Ended;
+
                     default:
                         return WarState.Default;
                 }
@@ -47,6 +50,7 @@ namespace ClashWrapper.Entities.War
     {
         Default,
         Preparation,
-        InWar
+        InWar,
+        Ended
     }
 }

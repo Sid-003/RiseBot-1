@@ -24,11 +24,18 @@ namespace RiseBot.Commands.Modules
             {
                 case LottoDraw lottoDraw:
                     var highSync = Start.GetSync();
+
+                    if (!highSync.HasValue)
+                    {
+                        await SendMessageAsync($"```css\nIt's a draw but I don't know what sync it is :(\n{result.WarLogComparison}```");
+                        break;
+                    }
+
                     var highTagIsClanTag = lottoDraw.HighSyncWinnerTag == lottoDraw.ClanTag;
                     var highSyncWinner = highTagIsClanTag ? lottoDraw.ClanName : lottoDraw.OpponentName;
                     var lowSyncWinner = highTagIsClanTag ? lottoDraw.OpponentName : lottoDraw.ClanName;
-                    var sync = highSync ? "high" : "low";
-                    var winner = highSync ? highSyncWinner : lowSyncWinner;
+                    var sync = highSync == true ? "high" : "low";
+                    var winner = highSync == true ? highSyncWinner : lowSyncWinner;
 
                     await SendMessageAsync($"```css\nIt is a {sync}-sync war and {winner} wins!\n{result.WarLogComparison}```");
                     break;

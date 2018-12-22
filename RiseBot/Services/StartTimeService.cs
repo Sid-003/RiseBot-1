@@ -21,7 +21,7 @@ namespace RiseBot.Services
 
         private static TimeSpan Period => TimeSpan.FromHours(1);
 
-        private bool _highSync = true;
+        private bool? _highSync;
 
         public StartTimeService(DiscordSocketClient client, BandClient band, DatabaseService database)
         {
@@ -117,7 +117,7 @@ namespace RiseBot.Services
                     {
                         Title = "Sync Times Posted!",
                         Color = new Color(0x10c1f7),
-                        Description = $"It is a {(_highSync ? "high" : "low")}-sync war",
+                        Description = $"It is a {(_highSync == true ? "high" : "low")}-sync war",
                         Timestamp = DateTimeOffset.UtcNow
                     }
                         .AddField("Sync Times!",
@@ -142,7 +142,7 @@ namespace RiseBot.Services
             }
         }
 
-        public bool GetSync()
+        public bool? GetSync()
             => _highSync;
     }
 }

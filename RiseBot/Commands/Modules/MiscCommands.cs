@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using ClashWrapper.Entities.ClanMembers;
 
 namespace RiseBot.Commands.Modules
 {
@@ -69,11 +70,11 @@ namespace RiseBot.Commands.Modules
             var clanMembers = await Clash.GetClanMembersAsync(Guild.ClanTag);
             var discordMembers = Guild.GuildMembers;
 
-            var missingMembers = clanMembers.Where(clanMember => discordMembers.Any(discordMember =>
-                !discordMember.Tags.Any(x =>
-                    string.Equals(x, clanMember.Tag, StringComparison.InvariantCultureIgnoreCase)))).ToArray();
+            var missingMembers = clanMembers.Where(clanMember => !discordMembers.Any(x =>
+                    x.Tags.Any(y => string.Equals(y, clanMember.Tag, StringComparison.InvariantCultureIgnoreCase))))
+                .ToArray();
 
-            var missingList = string.Join('\n', missingMembers.Select(x => x.Name));
+            var missingList = string.Join('\n', missingMembers.Select(x => $"{x.Name}{x.Tag}"));
 
             await SendMessageAsync(missingList);
         }
