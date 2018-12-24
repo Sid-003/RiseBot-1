@@ -47,12 +47,14 @@ namespace RiseBot.Services
 
             while (true)
             {
+                await Task.Delay(10000);
+
                 var currentWar = await _clash.GetCurrentWarAsync(ClanTag);
 
                 if (currentWar is null)
                     continue;
 
-                if (previousState == currentWar.State)
+                if (previousState == currentWar.State || currentWar.State != WarState.Preparation)
                     continue;
 
                 previousState = currentWar.State;
@@ -146,13 +148,26 @@ namespace RiseBot.Services
 
                     currentWar = await _clash.GetCurrentWarAsync(ClanTag);
 
+                    inDiscord = guildMembers.Where(guildMember =>
+                        guildMember.Tags.Any(tag => currentWar.Clan.Members.Any(x =>
+                            string.Equals(x.Tag, tag, StringComparison.InvariantCultureIgnoreCase)))).ToArray();
+
+                    foreach (var member in inDiscord)
+                        member.TotalWars++;
+
                     var missedAttacks = currentWar.Clan.Members.Where(x => x.Attacks.Count == 0).ToArray();
 
                     inDiscord = guildMembers.Where(guildMember =>
                         guildMember.Tags.Any(tag => missedAttacks.Any(x => x.Tag == tag))).ToArray();
 
+                    foreach (var member in inDiscord)
+                        member.MissedAttacks++;
+
+                    await _database.WriteEntityAsync(guild);
+
                     mentions = string.Join('\n',
-                        inDiscord.Select(x => $"{_client.GetUser(x.Id).Mention} you missed your attacks!"));
+                        inDiscord.Select(x =>
+                            $"{_client.GetUser(x.Id).Mention} you missed your attacks! {x.MissedAttacks}/{x.TotalWars}"));
 
                     await channel.SendMessageAsync($"War has ended!\n{mentions}");
                 }

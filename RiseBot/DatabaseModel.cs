@@ -16,7 +16,7 @@ namespace RiseBot
         public char Prefix { get; set; }
 
         public string ClanTag { get; set; }
-        
+
         public IList<GuildMember> GuildMembers { get; set; } = new List<GuildMember>();
         public IList<FWARep> FWAReps { get; set; } = new List<FWARep>();
 
@@ -34,6 +34,8 @@ namespace RiseBot
     {
         public override ulong Id { get; set; }
         public string MainTag { get; set; }
+        public int TotalWars { get; set; }
+        public int MissedAttacks { get; set; }
         public IList<string> Tags { get; set; } = new List<string>();
     }
 

@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using ClashWrapper.Entities.WarLog;
+using Discord.WebSocket;
 
 namespace RiseBot.Commands.Modules
 {
@@ -95,6 +96,17 @@ namespace RiseBot.Commands.Modules
             }
 
             await SendMessageAsync($"```diff\n{sb}\n```");
+        }
+
+        [Command("missed")]
+        public Task GetMissedAsync([Remainder] SocketGuildUser user)
+        {
+            var members = Guild.GuildMembers;
+            var found = members.FirstOrDefault(x => x.Id == user.Id);
+
+            return SendMessageAsync(found is null
+                ? "This user doesn't have an account in the clan"
+                : $"This user has missed: {found.MissedAttacks} attacks in {found.TotalWars} wars");
         }
     }
 }
