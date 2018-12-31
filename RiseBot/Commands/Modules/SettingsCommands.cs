@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 namespace RiseBot.Commands.Modules
 {
     [RequireOwner(Group = "perms")]
-    [RequireRole("secretary, fwa representatives", "co-leaders", Group = "perms")]
+    [RequireRole("secretary", "fwa representatives", "co-leaders", Group = "perms")]
     public class SettingsCommands : RiseBase
     {
         [Command("setprefix")]

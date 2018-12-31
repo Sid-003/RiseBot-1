@@ -43,8 +43,6 @@ namespace RiseBot.Services
 
         public async Task StartServiceAsync()
         {
-            var previousState = WarState.Default;
-
             while (true)
             {
                 await Task.Delay(10000);
@@ -53,12 +51,10 @@ namespace RiseBot.Services
 
                 if (currentWar is null)
                     continue;
-
-                if (previousState == currentWar.State || currentWar.State != WarState.Preparation)
+                
+                if(currentWar.State != WarState.Preparation)
                     continue;
-
-                previousState = currentWar.State;
-
+                
                 var startTime = currentWar.StartTime;
                 var endTime = currentWar.EndTime;
 
@@ -173,7 +169,6 @@ namespace RiseBot.Services
                 }
                 catch (TaskCanceledException)
                 {
-                    previousState = WarState.Default;
                 }
             }
         }

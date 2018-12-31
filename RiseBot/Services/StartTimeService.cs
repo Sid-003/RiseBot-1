@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using BandWrapper;
 using Discord;
 using Discord.WebSocket;
@@ -19,9 +20,12 @@ namespace RiseBot.Services
         private const string BandKey = "AADMPvOeSi6era-iwqaVkEtP";
         private const string Locale = "en_GB";
 
-        private static TimeSpan Period => TimeSpan.FromHours(1);
+        private static TimeSpan Period => TimeSpan.FromMinutes(30);
 
         private bool? _highSync;
+        private IUserMessage _lastMessage;
+        private DateTimeOffset _start;
+        private DateTimeOffset _end;
 
         public StartTimeService(DiscordSocketClient client, BandClient band, DatabaseService database)
         {
@@ -42,7 +46,7 @@ namespace RiseBot.Services
                     await Task.Delay(Period);
                     var posts = await _band.GetPostsAsync(BandKey, Locale, 3);
 
-                    if(posts is null || posts.Count == 0)
+                    if (posts is null || posts.Count == 0)
                     {
                         handledPost = false;
                         continue;
@@ -60,7 +64,7 @@ namespace RiseBot.Services
 
                     var post = await _band.GetPostAsync(BandKey, lastPostKey);
 
-                    if(post is null)
+                    if (post is null)
                     {
                         handledPost = false;
                         continue;
@@ -76,13 +80,13 @@ namespace RiseBot.Services
 
                         _webhook = new DiscordWebhookClient(bandHook);
                     }
-                    
+
                     //var builder = new EmbedBuilder
                     //{
-                        //Title = post.Schedule is null ? "New FWA Post!" : post.Schedule.Name,
-                        //Description = post.Content.Length > 2048 ? post.Content.Substring(0, 2048) : post.Content,
-                        //ThumbnailUrl = "https://upload.wikimedia.org/wikipedia/commons/3/30/2._BAND_Icon.png",
-                        //Color = new Color(0x11f711)
+                    //Title = post.Schedule is null ? "New FWA Post!" : post.Schedule.Name,
+                    //Description = post.Content.Length > 2048 ? post.Content.Substring(0, 2048) : post.Content,
+                    //ThumbnailUrl = "https://upload.wikimedia.org/wikipedia/commons/3/30/2._BAND_Icon.png",
+                    //Color = new Color(0x11f711)
                     //};
 
                     if (_webhook is null)
@@ -106,33 +110,23 @@ namespace RiseBot.Services
 
                     _highSync = post.Schedule.Name.Contains("High");
 
-                    var start = post.Schedule.Start;
-                    var end = post.Schedule.End;
+                    _start = post.Schedule.Start;
+                    _end = post.Schedule.End;
 
                     var reps = guild.FWAReps;
 
                     var times = reps.ToDictionary(rep => rep.Id,
-                        rep => (start.Add(TimeSpan.FromHours(rep.TimeZone)),
-                            end.Add(TimeSpan.FromHours(rep.TimeZone))));
+                        rep => (_start.Add(TimeSpan.FromHours(rep.TimeZone)),
+                            _end.Add(TimeSpan.FromHours(rep.TimeZone))));
 
-                    var builder = new EmbedBuilder
-                    {
-                        Title = "Sync Times Posted!",
-                        Color = new Color(0x10c1f7),
-                        Description = $"It is a {(_highSync == true ? "high" : "low")}-sync war",
-                        Timestamp = DateTimeOffset.UtcNow
-                    }
-                        .AddField("Sync Times!",
-                            string.Join('\n',
-                                times.Select(x =>
-                                    $"{_client.GetUser(x.Key).Mention} : **Start**, {x.Value.Item1:t} - **End**,{x.Value.Item2:t}")));
+                    var embed = BuildEmbed(times);
 
-                    await startChannel.SendMessageAsync("@everyone", embed: builder.Build());
+                    _lastMessage = await startChannel.SendMessageAsync("@everyone", embed: embed);
 
 #pragma warning disable 4014
                     Task.Run(async () =>
                     {
-                        await Task.Delay(start - DateTimeOffset.UtcNow - TimeSpan.FromMinutes(10));
+                        await Task.Delay(_start - DateTimeOffset.UtcNow - TimeSpan.FromMinutes(10));
                         await repChannel.SendMessageAsync("<@&356176442716848132> search is in 10 minutes!");
                     });
 #pragma warning restore 4014
@@ -146,5 +140,30 @@ namespace RiseBot.Services
 
         public bool? GetSync()
             => _highSync;
+
+        public Task UpdateLastMessageAsync(Dictionary<ulong, (DateTimeOffset, DateTimeOffset)> times)
+        {
+            return _lastMessage is null
+                ? Task.CompletedTask
+                : _lastMessage.ModifyAsync(x => x.Embed = BuildEmbed(times));
+        }
+
+        public (DateTimeOffset, DateTimeOffset) GetStartEndTimes()
+            => (_start, _end);
+
+        private Embed BuildEmbed(Dictionary<ulong, (DateTimeOffset, DateTimeOffset)> times)
+        {
+            return new EmbedBuilder
+            {
+                Title = "Sync Times Posted!",
+                Color = new Color(0x10c1f7),
+                Description = $"It is a {(_highSync == true ? "high" : "low")}-sync war",
+                Timestamp = DateTimeOffset.UtcNow
+            }
+            .AddField("Sync Times!",
+                string.Join('\n',
+                    times.Select(x =>
+                        $"{_client.GetUser(x.Key).Mention} : **Start**, {x.Value.Item1:t} - **End**,{x.Value.Item2:t}"))).Build();
+        }
     }
 }

@@ -1,11 +1,15 @@
-﻿using ClashWrapper;
+﻿using System;
+using System.Collections.Generic;
+using ClashWrapper;
 using Qmmands;
 using RiseBot.Results;
 using RiseBot.Services;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using ClashWrapper.Entities.ClanMembers;
 using ClashWrapper.Entities.WarLog;
+using Discord;
 using Discord.WebSocket;
 
 namespace RiseBot.Commands.Modules
@@ -67,11 +71,11 @@ namespace RiseBot.Commands.Modules
 
             var i = 1;
 
-            var donationList = string.Join('\n', membersByDonations.Select(x => $"{i++}:{x.Name} - **{x.Donations}**"));
+            var donationList = string.Join('\n', membersByDonations.Select(x => $"{i++}: {Format.Sanitize(x.Name)} - **{x.Donations}**"));
 
             var missedAttackers = warMembers.Where(x => x.Attacks.Count == 0);
 
-            var missedList = string.Join('\n', missedAttackers.Select(x => x.Name));
+            var missedList = string.Join('\n', missedAttackers.Select(x => Format.Sanitize(x.Name)));
 
             await SendMessageAsync(
                 $"__**Members Ordered By Donations**__: \n{donationList}\n\n__**Missed Attackers**__:\n{missedList}");
@@ -107,6 +111,30 @@ namespace RiseBot.Commands.Modules
             return SendMessageAsync(found is null
                 ? "This user doesn't have an account in the clan"
                 : $"This user has missed: {found.MissedAttacks} attacks in {found.TotalWars} wars");
+        }
+
+        [Command("missed")]
+        public async Task ViewFrequentMissersAsync()
+        {
+            var guildMembers = Guild.GuildMembers;
+
+            var clanMembers = await Clash.GetClanMembersAsync(Guild.ClanTag);
+
+            var combined = (from clanMember in clanMembers
+                let foundGuildMember =
+                    guildMembers.FirstOrDefault(guildMember => guildMember.Tags.Any(tag =>
+                        string.Equals(tag, clanMember.Tag, StringComparison.InvariantCultureIgnoreCase)))
+                where !(foundGuildMember is null)
+                select (clanMember, foundGuildMember)).ToArray();
+
+            var frequents = combined.Where(x =>
+                (float) x.foundGuildMember.MissedAttacks / x.foundGuildMember.TotalWars > 0.5);
+
+            var message = string.Join('\n',
+                frequents.Select(x =>
+                    $"{Context.Guild.GetUser(x.foundGuildMember.Id)?.Mention} - {x.clanMember.Name}{x.clanMember.Tag} {x.foundGuildMember.MissedAttacks}/{x.foundGuildMember.TotalWars}"));
+
+            await SendMessageAsync($"__**People with >50% missed attacks**__\n{message}");
         }
     }
 }
