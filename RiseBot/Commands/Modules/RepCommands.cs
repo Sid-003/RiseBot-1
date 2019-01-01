@@ -51,8 +51,8 @@ namespace RiseBot.Commands.Modules
             var (start, end) = Start.GetStartEndTimes();
 
             var times = Guild.FWAReps.ToDictionary(x => x.Id,
-                x => (start.Add(TimeSpan.FromHours(rep.TimeZone)),
-                    end.Add(TimeSpan.FromHours(rep.TimeZone))));
+                x => (start.Add(TimeSpan.FromHours(x.TimeZone)),
+                    end.Add(TimeSpan.FromHours(x.TimeZone))));
 
             await Start.UpdateLastMessageAsync(times);
             await SendMessageAsync("Timezone has been set");

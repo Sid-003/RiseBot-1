@@ -19,6 +19,7 @@ namespace RiseBot
 
         public IList<GuildMember> GuildMembers { get; set; } = new List<GuildMember>();
         public IList<FWARep> FWAReps { get; set; } = new List<FWARep>();
+        public IList<Event> Events { get; set; } = new List<Event>();
 
         public ulong WelcomeChannelId { get; set; }
         public ulong VerifiedRoleId { get; set; }
@@ -43,5 +44,14 @@ namespace RiseBot
     {
         public override ulong Id { get; set; }
         public double TimeZone { get; set; }
+    }
+
+    public class Event : Entity
+    {
+        public override ulong Id { get; set; }
+        public long Start { get; set; }
+        public long Duration { get; set; }
+        public ulong Author { get; set; }
+        public string Details { get; set; }
     }
 }
