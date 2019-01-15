@@ -1,16 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using ClashWrapper;
-using Qmmands;
-using RiseBot.Results;
-using RiseBot.Services;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using ClashWrapper.Entities.ClanMembers;
+﻿using ClashWrapper;
+using ClashWrapper.Entities.War;
 using ClashWrapper.Entities.WarLog;
 using Discord;
 using Discord.WebSocket;
+using Qmmands;
+using RiseBot.Results;
+using RiseBot.Services;
+using System;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace RiseBot.Commands.Modules
 {
@@ -33,7 +32,7 @@ namespace RiseBot.Commands.Modules
                     if (!highSync.HasValue)
                     {
                         await SendMessageAsync($"```css\nIt's a draw but I don't know what sync it is :(\n{result.WarLogComparison}```");
-                        break;
+                        return;
                     }
 
                     var highTagIsClanTag = lottoDraw.HighSyncWinnerTag == lottoDraw.ClanTag;
@@ -43,11 +42,11 @@ namespace RiseBot.Commands.Modules
                     var winner = highSync == true ? highSyncWinner : lowSyncWinner;
 
                     await SendMessageAsync($"```css\nIt is a {sync}-sync war and {winner} wins!\n{result.WarLogComparison}```");
-                    break;
+                    return;
 
                 case LottoFailed lottoFailed:
                     await SendMessageAsync(lottoFailed.Reason);
-                    break;
+                    return;
 
                 case LottoResult lottoResult:
                     var lottoWinner = lottoResult.ClanWin
@@ -55,7 +54,7 @@ namespace RiseBot.Commands.Modules
                         : $"{lottoResult.OpponentName}";
 
                     await SendMessageAsync($"```css\nIt is {lottoWinner}'s win!\n{result.WarLogComparison}```");
-                    break;
+                    return;
             }
         }
 
@@ -65,6 +64,13 @@ namespace RiseBot.Commands.Modules
         {
             var clanMembers = await Clash.GetClanMembersAsync(Guild.ClanTag);
             var currentWar = await Clash.GetCurrentWarAsync(Guild.ClanTag);
+
+            if (currentWar.Clan.Members is null)
+            {
+                await SendMessageAsync("War search is in progress, and yes the API is that bad that this command doesn't work during search");
+                return;
+            }
+
             var warMembers = currentWar.Clan.Members;
 
             var membersByDonations = clanMembers.OrderByDescending(x => x.Donations);
@@ -73,12 +79,20 @@ namespace RiseBot.Commands.Modules
 
             var donationList = string.Join('\n', membersByDonations.Select(x => $"{i++}: {Format.Sanitize(x.Name)} - **{x.Donations}**"));
 
-            var missedAttackers = warMembers.Where(x => x.Attacks.Count == 0);
+            var sb = new StringBuilder();
+            sb.AppendLine($"__**Members Ordered By Donations**__: \n{donationList}");
 
-            var missedList = string.Join('\n', missedAttackers.Select(x => Format.Sanitize(x.Name)));
+            if(currentWar.State == WarState.Ended)
+            {
 
-            await SendMessageAsync(
-                $"__**Members Ordered By Donations**__: \n{donationList}\n\n__**Missed Attackers**__:\n{missedList}");
+                var missedAttackers = warMembers.Where(x => x.Attacks.Count == 0);
+
+                var missedList = string.Join('\n', missedAttackers.Select(x => Format.Sanitize(x.Name)));
+
+                sb.AppendLine($"\n\n__**Missed Attackers**__:\n{missedList}");
+            }
+
+            await SendMessageAsync(sb.ToString());
         }
 
         [Command("warlog")]
@@ -106,7 +120,7 @@ namespace RiseBot.Commands.Modules
         public Task GetMissedAsync([Remainder] SocketGuildUser user)
         {
             var members = Guild.GuildMembers;
-            var found = members.FirstOrDefault(x => x.Id == user.Id);
+            var found = members.FirstOrDefault(x => x.Id == user.Id); //TODO move into typereader
 
             return SendMessageAsync(found is null
                 ? "This user doesn't have an account in the clan"
@@ -132,7 +146,7 @@ namespace RiseBot.Commands.Modules
 
             var message = string.Join('\n',
                 frequents.Select(x =>
-                    $"{Context.Guild.GetUser(x.foundGuildMember.Id)?.Mention} - {x.clanMember.Name}{x.clanMember.Tag} {x.foundGuildMember.MissedAttacks}/{x.foundGuildMember.TotalWars}"));
+                    $"{x.clanMember.Name}{x.clanMember.Tag} {x.foundGuildMember.MissedAttacks}/{x.foundGuildMember.TotalWars}"));
 
             await SendMessageAsync($"__**People with >50% missed attacks**__\n{message}");
         }

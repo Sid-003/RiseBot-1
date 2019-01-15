@@ -1,4 +1,5 @@
 ﻿using ClashWrapper;
+using ClashWrapper.Entities.War;
 using Qmmands;
 using RiseBot.Services;
 using System;
@@ -6,7 +7,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using ClashWrapper.Entities.ClanMembers;
 
 namespace RiseBot.Commands.Modules
 {
@@ -27,7 +27,7 @@ namespace RiseBot.Commands.Modules
         [RunMode(RunMode.Parallel)]
         public async Task SetNameAsync(string userTag)
         {
-            var guildMember = Guild.GuildMembers.FirstOrDefault(x => x.Id == Context.User.Id);
+            var guildMember = Guild.GuildMembers.FirstOrDefault(x => x.Id == Context.User.Id); //TODO typereader
 
             if (guildMember is null)
             {
@@ -138,6 +138,21 @@ namespace RiseBot.Commands.Modules
                     : $"{foundMember.Tag} - {foundMember.Name}").ToList();
 
             await SendMessageAsync(string.Join('\n', matchingTags));
+        }
+
+        [Command("band")]
+        [RunMode(RunMode.Parallel)]
+        public async Task GetBandMatchAsync()
+        {
+            var currentWar = await Clash.GetCurrentWarAsync(Guild.ClanTag);
+
+            if (currentWar is null || currentWar.State != WarState.Preparation)
+            {
+                await SendMessageAsync("Either not in war or the API hasn't updated yet");
+                return;
+            }
+
+            await SendMessageAsync($"!match {currentWar.Opponent.Tag}");
         }
     }
 }

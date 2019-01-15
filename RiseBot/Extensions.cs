@@ -77,5 +77,8 @@ namespace RiseBot
 
         public static string GetDisplayName(this IGuildUser user)
             => user.Nickname ?? user.Username;
+
+        public static string GetAvatarUrlOrDefault(this IUser user)
+            => user.GetAvatarUrl() ?? user.GetDefaultAvatarUrl();
     }
 }

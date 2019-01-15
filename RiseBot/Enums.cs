@@ -6,7 +6,8 @@
         Discord,
         Clash,
         Band,
-        Pusharp
+        Pusharp,
+        Reminder
     }
 
     public enum Severity

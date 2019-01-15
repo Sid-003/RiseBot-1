@@ -1,5 +1,6 @@
 ﻿using ClashWrapper;
 using ClashWrapper.Entities.War;
+using Discord;
 using Discord.WebSocket;
 using RiseBot.Results;
 using System;
@@ -16,17 +17,20 @@ namespace RiseBot.Services
         private readonly ClashClient _clash;
         private readonly DatabaseService _database;
         private readonly StartTimeService _start;
+        private readonly LogService _logger;
 
         private CancellationTokenSource _cancellationTokenSource;
 
         private const string ClanTag = "#2GGCRC90";
 
-        public WarReminderService(DiscordSocketClient client, ClashClient clash, DatabaseService database, StartTimeService start)
+        public WarReminderService(DiscordSocketClient client, ClashClient clash, DatabaseService database,
+            StartTimeService start, LogService logger)
         {
             _client = client;
             _clash = clash;
             _database = database;
             _start = start;
+            _logger = logger;
 
             _cancellationTokenSource = new CancellationTokenSource();
 
@@ -41,6 +45,7 @@ namespace RiseBot.Services
             };
         }
 
+        //TODO think of a way to handle maintenance and still track/remind
         public async Task StartServiceAsync()
         {
             while (true)
@@ -60,13 +65,14 @@ namespace RiseBot.Services
 
                 var cancellationToken = _cancellationTokenSource.Token;
 
+                var guild = _database.Guild;
+                var channelId = guild.WarChannelId;
+
+                if (!(_client.GetChannel(channelId) is SocketTextChannel channel))
+                    return;
+
                 try
                 {
-                    var guild = _database.Guild;
-                    var channelId = guild.WarChannelId;
-
-                    if (!(_client.GetChannel(channelId) is SocketTextChannel channel))
-                        return;
 
                     var result = await Utilites.CalculateWarWinnerAsync(_clash, ClanTag);
 
@@ -96,7 +102,7 @@ namespace RiseBot.Services
 
                         case LottoFailed lottoFailed:
                             await channel.SendMessageAsync(lottoFailed.Reason);
-                            
+
                             _cancellationTokenSource.Cancel(true);
                             _cancellationTokenSource = new CancellationTokenSource();
                             break;
@@ -133,7 +139,8 @@ namespace RiseBot.Services
                         guildMember.Tags.Any(tag => needToAttack.Any(x => x.Tag == tag))).ToArray();
 
                     var mentions = string.Join('\n',
-                        inDiscord.Select(x => $"{_client.GetUser(x.Id).Mention} you need to attack!"));
+                        inDiscord.Select(x =>
+                            $"{_client.GetUser(x.Id)?.Mention ?? "{User Not Found}"} you need to attack!"));
 
                     await channel.SendMessageAsync($"War ends in one hour!\n{mentions}");
 
@@ -161,14 +168,38 @@ namespace RiseBot.Services
 
                     await _database.WriteEntityAsync(guild);
 
-                    mentions = string.Join('\n',
-                        inDiscord.Select(x =>
-                            $"{_client.GetUser(x.Id).Mention} you missed your attacks! {x.MissedAttacks}/{x.TotalWars}"));
+                    var opponents = currentWar.Opponent.Members.ToDictionary(x => x.Tag, x => x);
 
-                    await channel.SendMessageAsync($"War has ended!\n{mentions}");
+                    var notMirrored = currentWar.Clan.Members.Where(x =>
+                        x.Attacks.Any(y => opponents[y.DefenderTag].MapPosition == x.MapPosition)).ToArray();
+
+                    var builder = new EmbedBuilder
+                        {
+                            Title = "War Breakdown",
+                            Color = new Color(0x21a9ff)
+                        }
+                        .AddField("Missed Both Attacks",
+                            string.Join('\n',
+                                inDiscord.Select(x => $"{_client.GetUser(x.Id)?.Mention ?? "{User Not Found}"}")));
+
+                    if (notMirrored.Length > 0)
+                    {
+                        builder.AddField("Didn't Attack Mirror",
+                            string.Join('\n', notMirrored.Select(x => $"{x.Name}{x.Tag}")));
+                    }
+
+                    await channel.SendMessageAsync(string.Join(' ',
+                            inDiscord.Select(x => $"{_client.GetUser(x.Id)?.Mention ?? "{User Not Found}"}")),
+                        embed: builder.Build());
                 }
                 catch (TaskCanceledException)
                 {
+                    await channel.SendMessageAsync("Maintenance, reminder cancelled");
+                }
+                catch (Exception ex)
+                {
+                    await _logger.LogAsync(Source.Reminder, Severity.Error, ex.Message, ex);
+                    await channel.SendMessageAsync("I did an oopsie");
                 }
             }
         }

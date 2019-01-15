@@ -1,14 +1,15 @@
-﻿using System;
+﻿using Qmmands;
+using System;
 using System.Collections.Generic;
 using System.Text;
-using Qmmands;
 using System.Threading.Tasks;
 
 namespace RiseBot.Commands.Modules
 {
+    //TODO this stupid shit
     public class EventCommands : RiseBase
     {
-        private static readonly IReadOnlyDictionary<int, string> Month = new Dictionary<int, string>
+        private static readonly IReadOnlyDictionary<int, string> Months = new Dictionary<int, string>
         {
             [1] = "January",
             [2] = "February",
@@ -28,7 +29,7 @@ namespace RiseBot.Commands.Modules
         public Task ViewEventsAsync()
         {
             var month = DateTime.UtcNow.Month;
-            var monthString = Month[month];
+            var monthString = Months[month];
             var monthLength = DateTime.DaysInMonth(DateTime.UtcNow.Year, month);
 
             var sb = new StringBuilder();

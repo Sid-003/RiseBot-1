@@ -1,10 +1,10 @@
-﻿using System;
-using Discord.WebSocket;
+﻿using Discord.WebSocket;
 using Qmmands;
 using RiseBot.Commands.Checks;
+using RiseBot.Services;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
-using RiseBot.Services;
 
 namespace RiseBot.Commands.Modules
 {
@@ -42,7 +42,7 @@ namespace RiseBot.Commands.Modules
 
             if (rep is null)
             {
-                await SendMessageAsync("You are not a rep");
+                await SendMessageAsync("You are not a rep"); //TODO move into typereader
                 return;
             }
 

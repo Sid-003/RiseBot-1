@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Threading.Tasks;
+using Discord.Webhook;
 
 namespace RiseBot.Services
 {
@@ -27,6 +28,8 @@ namespace RiseBot.Services
             _messageCache;
 
         private static TimeSpan MessageLifeTime => TimeSpan.FromMinutes(10);
+
+        private DiscordWebhookClient _webhook;
         
         public MessageService(CommandService commands, DiscordSocketClient client, DatabaseService database,
             LogService logger, TimerService timer, IServiceProvider services)
@@ -49,12 +52,34 @@ namespace RiseBot.Services
                 msg is SocketUserMessage message ? HandleReceivedMessageAsync(message, false) : Task.CompletedTask;
             _client.MessageUpdated += (_, msg, __) =>
                 msg is SocketUserMessage message ? HandleReceivedMessageAsync(message, true) : Task.CompletedTask;
+
+            _client.MessageDeleted += HandleDeletedAsync;
+        }
+
+        //TODO not shit
+        private async Task HandleDeletedAsync(Cacheable<IMessage, ulong> cacheable, ISocketMessageChannel _)
+        {
+            var message = await cacheable.GetOrDownloadAsync();
+
+            var manda = _client.GetUser(241828624787832833);
+
+            if (message is null || message.Author.Id != manda.Id)
+                return;
+
+            var channel = (SocketTextChannel) _client.GetChannel(530739486573854741);
+
+            if (_webhook is null)
+            {
+                var webhooks = await channel.GetWebhooksAsync();
+                _webhook = new DiscordWebhookClient(webhooks.First());
+            }
+
+            await _webhook.SendMessageAsync(message.Content);
         }
 
         private async Task HandleReceivedMessageAsync(SocketUserMessage message, bool isEdit)
         {
-            if (message.Author.IsBot && message.Author.Id != _client.CurrentUser.Id ||
-                message.Channel is IPrivateChannel) return;
+            if (message.Channel is IPrivateChannel) return;
 
             var context = new RiseContext(_client, message, isEdit);
             var guild = _database.Guild;

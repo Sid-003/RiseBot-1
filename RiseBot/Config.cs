@@ -1,5 +1,5 @@
-﻿using System.IO;
-using Newtonsoft.Json.Linq;
+﻿using Newtonsoft.Json.Linq;
+using System.IO;
 
 namespace RiseBot
 {
@@ -16,6 +16,7 @@ namespace RiseBot
         {
             var config = JObject.Parse(File.ReadAllText(dir));
 
+            //why am I retarded
             return new Config
             {
                 BotToken = $"{config["Token"]}",

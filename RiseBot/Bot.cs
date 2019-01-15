@@ -46,7 +46,8 @@ namespace RiseBot
                 .AddSingleton(_client = new DiscordSocketClient(new DiscordSocketConfig
                 {
                     LogLevel = LogSeverity.Verbose,
-                    AlwaysDownloadUsers = true
+                    AlwaysDownloadUsers = true,
+                    MessageCacheSize = 100
                 }))
                 .AddSingleton(_commands = new CommandService(new CommandServiceConfiguration
                 {
@@ -101,6 +102,13 @@ namespace RiseBot
             {
                 var (source, severity, lMessage, exception) = LogFactory.FromDiscord(message);
                 return logger.LogAsync(source, severity, lMessage, exception);
+            };
+
+            //TODO do this properly
+            _client.UserLeft += (user) =>
+            {
+                var channel = _client.GetChannel(533650294509404181) as SocketTextChannel;
+                return channel.SendMessageAsync($"{user.GetDisplayName()} left");
             };
 
             clashClient.Log += message => logger.LogAsync(Source.Clash, Severity.Verbose, message);

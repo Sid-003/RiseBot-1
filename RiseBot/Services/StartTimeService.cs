@@ -1,11 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using BandWrapper;
+﻿using BandWrapper;
 using Discord;
+using Discord.Webhook;
 using Discord.WebSocket;
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Discord.Webhook;
 
 namespace RiseBot.Services
 {

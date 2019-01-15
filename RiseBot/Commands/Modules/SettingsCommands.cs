@@ -82,7 +82,8 @@ namespace RiseBot.Commands.Modules
         [Command("viewsettings")]
         public Task ViewSettingsAsync()
         {
-            var message = new[] {
+            var message = new[] 
+            {
                 $"Prefix: {Guild.Prefix}",
                 $"Clantag: {Guild.ClanTag}",
                 $"Welcome: {Guild.WelcomeChannelId}",
@@ -92,7 +93,8 @@ namespace RiseBot.Commands.Modules
                 $"War: {Guild.WarChannelId}",
                 $"Start: {Guild.StartTimeChannelId}",
                 $"Rep: {Guild.RepChannelId}",
-                $"General: {Guild.GeneralId}"};
+                $"General: {Guild.GeneralId}"
+            };
 
             return SendMessageAsync(string.Join('\n', message));
         }

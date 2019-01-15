@@ -13,6 +13,7 @@ namespace RiseBot.Commands.Modules
 
         //TODO eval
 
+        //TODO this is shit
         [Command("dbcleanse")]
         public Task CleanseDbAsync()
         {

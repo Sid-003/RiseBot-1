@@ -31,7 +31,7 @@ namespace ClashWrapper.Entities.War
             get
             {
                 return _members ?? (_members = new ReadOnlyCollection<WarMember>(
-                           _model.Members.Select(x => new WarMember(x)),
+                           _model.Members?.Select(x => new WarMember(x)),
                            () => _model.Members.Length));
             }
         }

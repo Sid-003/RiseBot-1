@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace RiseBot.Commands.Modules
 {
     [RequireOwner(Group = "perms")]
-    [RequireRole("fwa representative", "co-leaders")]
+    [RequireRole("fwa representatives", "co-leaders", Group = "perms")]
     public class VerificationCommands : RiseBase
     {
         public ClashClient Clash { get; set; }

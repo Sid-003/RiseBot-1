@@ -15,6 +15,14 @@ namespace RiseBot
         {
             var currentWar = await client.GetCurrentWarAsync(clanTag);
 
+            if (currentWar is null)
+            {
+                return new LottoFailed
+                {
+                    Reason = "API maintenance"
+                };
+            }
+
             if (currentWar.Size == 0)
             {
                 return new LottoFailed
@@ -109,6 +117,7 @@ namespace RiseBot
                 var clanRes = clanWarLog[i].Result;
                 var oppRes = opponentWarLog[i].Result;
 
+                //leaving here to show how stupid I am
                 var clanStr = clanRes == WarResult.Win ? $"{"(WIN)", -6}" : "[LOSS]";
                 var oppStr = oppRes == WarResult.Win ? $"{"(WIN)",-6}" : "[LOSS]";
 
