@@ -1,4 +1,5 @@
 ﻿using Discord;
+using Discord.Webhook;
 using Discord.WebSocket;
 using Qmmands;
 using RiseBot.Commands;
@@ -9,7 +10,6 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Threading.Tasks;
-using Discord.Webhook;
 
 namespace RiseBot.Services
 {
@@ -199,7 +199,11 @@ namespace RiseBot.Services
 
             do
             {
-                var found = _messageCache[context.Channel.Id][context.User.Id];
+                if (!_messageCache.TryGetValue(context.Channel.Id, out var foundCache))
+                    return;
+
+                if (!foundCache.TryGetValue(context.User.Id, out var found))
+                    return;
 
                 if (found is null)
                     return;
