@@ -73,7 +73,6 @@ namespace RiseBot.Services
 
                 try
                 {
-
                     var result = await Utilites.CalculateWarWinnerAsync(_clash, ClanTag);
 
                     switch (result)
@@ -171,7 +170,7 @@ namespace RiseBot.Services
                     var opponents = currentWar.Opponent.Members.ToDictionary(x => x.Tag, x => x);
 
                     var notMirrored = currentWar.Clan.Members.Where(x =>
-                        x.Attacks.Any(y => opponents[y.DefenderTag].MapPosition == x.MapPosition)).ToArray();
+                        x.Attacks.Any(y => opponents[y.DefenderTag].MapPosition != x.MapPosition)).ToArray();
 
                     var builder = new EmbedBuilder
                         {
@@ -185,7 +184,7 @@ namespace RiseBot.Services
                     if (notMirrored.Length > 0)
                     {
                         builder.AddField("Didn't Attack Mirror",
-                            string.Join('\n', notMirrored.Select(x => $"{x.Name}{x.Tag}")));
+                            string.Join('\n', notMirrored.Select(x => $"{x.Name}")));
                     }
 
                     await channel.SendMessageAsync(string.Join(' ',

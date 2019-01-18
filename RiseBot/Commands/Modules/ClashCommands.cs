@@ -124,7 +124,7 @@ namespace RiseBot.Commands.Modules
 
             return SendMessageAsync(found is null
                 ? "This user doesn't have an account in the clan"
-                : $"This user has missed: {found.MissedAttacks} attacks in {found.TotalWars} wars");
+                : $"This user has missed both attacks in {found.MissedAttacks} out of {found.TotalWars} wars");
         }
 
         [Command("missed")]
