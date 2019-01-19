@@ -15,15 +15,12 @@ namespace RiseBot
     public class Bot
     {
         private DiscordSocketClient _client;
-        private DatabaseService _database;
         private CommandService _commands;
         private IServiceProvider _services;
 
         public async Task RunBotAsync()
         {
             var config = Config.Create("./config.json");
-
-            _database = await new DatabaseService().LoadGuildAsync();
 
             var clashClient = new ClashClient(new ClashClientConfig
             {
@@ -54,7 +51,6 @@ namespace RiseBot
                     CaseSensitive = false
                 })
                     .AddTypeParsers())
-                .AddSingleton(_database)
                 .AddSingleton(clashClient)
                 .AddSingleton(bandClient)
                 .AddSingleton(pushClient)
@@ -73,7 +69,7 @@ namespace RiseBot
             {
                 Task.Run(async () =>
                 {
-                    var guild = _database.Guild;
+                    var guild = _services.GetService<DatabaseService>().Guild;
                     var dGuild = _client.GetGuild(guild.Id);
 
                     var channel = dGuild.GetTextChannel(guild.WelcomeChannelId);

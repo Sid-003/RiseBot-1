@@ -109,7 +109,8 @@ namespace RiseBot.Commands.Modules
 
         protected override Task AfterExecutedAsync(Command command)
         {
-            return Database.WriteEntityAsync(Guild);
+            Database.UpdateGuild();
+            return Task.CompletedTask;
         }
     }
 }

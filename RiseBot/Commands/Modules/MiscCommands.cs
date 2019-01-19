@@ -54,7 +54,7 @@ namespace RiseBot.Commands.Modules
 
             guildMember.MainTag = foundMember.Tag;
 
-            await Database.WriteEntityAsync(Guild);
+            Database.UpdateGuild();
             await Context.User.ModifyAsync(x => x.Nickname = foundMember.Name);
             await SendMessageAsync("Name has been set");
         }

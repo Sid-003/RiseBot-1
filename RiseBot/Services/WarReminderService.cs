@@ -125,7 +125,7 @@ namespace RiseBot.Services
                         await warRole.ModifyAsync(x => x.Mentionable = true);
                         guild.InWarRoleId = warRole.Id;
 
-                        await _database.WriteEntityAsync(guild);
+                        _database.UpdateGuild();
                     }
 
                     var inWar = currentWar.Clan.Members;
@@ -189,7 +189,7 @@ namespace RiseBot.Services
                     foreach (var member in inDiscord)
                         member.MissedAttacks++;
 
-                    await _database.WriteEntityAsync(guild);
+                    _database.UpdateGuild();
 
                     var opponents = currentWar.Opponent.Members.ToDictionary(x => x.Tag, x => x);
 
@@ -221,7 +221,7 @@ namespace RiseBot.Services
                     warRole = await discordGuild.CreateRoleAsync("InWar");
                     await warRole.ModifyAsync(x => x.Mentionable = true);
                     guild.InWarRoleId = warRole.Id;
-                    await _database.WriteEntityAsync(guild);
+                    _database.UpdateGuild();
                 }
                 catch (TaskCanceledException)
                 {
