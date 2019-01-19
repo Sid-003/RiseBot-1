@@ -66,6 +66,23 @@ namespace RiseBot.Commands.Modules
             return SendMessageAsync(rep is null ? "You are not a rep" : $"Your timezone is {rep.TimeZone}");
         }
 
+        [Command("outofwar")]
+        public async Task RemoveWarRoleAsync()
+        {
+            var role = Context.Guild.GetRole(Guild.InWarRoleId);
+
+            if(!(role is null))
+            {
+                await role.DeleteAsync();
+            }
+
+            var newRole = await Context.Guild.CreateRoleAsync("InWar");
+            await newRole.ModifyAsync(x => x.Mentionable = true);
+            Guild.InWarRoleId = newRole.Id;
+
+            await SendMessageAsync("Role has been removed from everyone");
+        }
+
         protected override Task AfterExecutedAsync(Command command)
         {
             return Database.WriteEntityAsync(Guild);

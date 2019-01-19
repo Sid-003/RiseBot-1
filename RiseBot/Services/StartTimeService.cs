@@ -17,6 +17,7 @@ namespace RiseBot.Services
         private readonly DatabaseService _database;
         private DiscordWebhookClient _webhook;
 
+        //TODO prob move this to config
         private const string BandKey = "AADMPvOeSi6era-iwqaVkEtP";
         private const string Locale = "en_GB";
 
@@ -34,6 +35,7 @@ namespace RiseBot.Services
             _database = database;
         }
 
+        //TODO cancel reminders if time is changed
         public async Task StartServiceAsync()
         {
             var lastPostKey = "";
@@ -73,6 +75,7 @@ namespace RiseBot.Services
                     if (!(_client.GetChannel(guild.RepChannelId) is SocketTextChannel repChannel))
                         continue;
 
+                    //no one actually uses this, too lazy to get rid of it
                     if (_webhook is null)
                     {
                         var webhooks = await repChannel.GetWebhooksAsync();
@@ -124,10 +127,14 @@ namespace RiseBot.Services
                     _lastMessage = await startChannel.SendMessageAsync("@everyone", embed: embed);
 
 #pragma warning disable 4014
-                    Task.Run(async () =>
+                    Task.Run(() =>
                     {
-                        await Task.Delay(_start - DateTimeOffset.UtcNow - TimeSpan.FromMinutes(10));
-                        await repChannel.SendMessageAsync("<@&356176442716848132> search is in 10 minutes!");
+                        //TODO rep role in db
+                        //why did I make this ugly
+                        Task.Delay(_start - DateTimeOffset.UtcNow - TimeSpan.FromMinutes(10)).ContinueWith(_ =>
+                                repChannel.SendMessageAsync("<@&356176442716848132> search is in 10 minutes!"))
+                            .ContinueWith(_ => Task.Delay(_start - DateTimeOffset.UtcNow)).ContinueWith(_ =>
+                                repChannel.SendMessageAsync("<@&356176442716848132> seasrch has started!"));
                     });
 #pragma warning restore 4014
                 }

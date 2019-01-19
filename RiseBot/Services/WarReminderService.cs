@@ -46,6 +46,7 @@ namespace RiseBot.Services
         }
 
         //TODO think of a way to handle maintenance and still track/remind
+        //TODO this has gotten kinda ugly with all the revisions
         public async Task StartServiceAsync()
         {
             while (true)
@@ -116,25 +117,48 @@ namespace RiseBot.Services
                             break;
                     }
 
+                    var discordGuild = channel.Guild;
+
+                    if (!(discordGuild.GetRole(guild.InWarRoleId) is IRole warRole))
+                    {
+                        warRole = await discordGuild.CreateRoleAsync("InWar");
+                        await warRole.ModifyAsync(x => x.Mentionable = true);
+                        guild.InWarRoleId = warRole.Id;
+
+                        await _database.WriteEntityAsync(guild);
+                    }
+
+                    var inWar = currentWar.Clan.Members;
+                    var guildMembers = guild.GuildMembers;
+                    var inDiscord = guildMembers.Where(guildMember =>
+                        guildMember.Tags.Any(tag => inWar.Any(x => x.Tag == tag))).ToArray();
+
+                    var foundMembers = inDiscord.Select(x => discordGuild.GetUser(x.Id)).Where(y => !(y is null));
+
+                    foreach (var found in foundMembers)
+                    {
+                        await found.AddRoleAsync(warRole);
+                    }
+
                     var delay = startTime - DateTimeOffset.UtcNow;
                     delay = delay < TimeSpan.Zero ? TimeSpan.Zero : delay;
 
                     await Task.Delay(delay, cancellationToken);
 
-                    await channel.SendMessageAsync("War has started!");
+                    await channel.SendMessageAsync($"{warRole.Mention} war has started!");
 
                     delay = endTime - DateTimeOffset.UtcNow.AddHours(1);
                     delay = delay < TimeSpan.Zero ? TimeSpan.Zero : delay;
 
                     await Task.Delay(delay, cancellationToken);
 
-                    var guildMembers = guild.GuildMembers;
+                    guildMembers = guild.GuildMembers;
 
                     currentWar = await _clash.GetCurrentWarAsync(ClanTag);
 
                     var needToAttack = currentWar.Clan.Members.Where(x => x.Attacks.Count < 2).ToArray();
 
-                    var inDiscord = guildMembers.Where(guildMember =>
+                    inDiscord = guildMembers.Where(guildMember =>
                         guildMember.Tags.Any(tag => needToAttack.Any(x => x.Tag == tag))).ToArray();
 
                     var mentions = string.Join('\n',
@@ -170,7 +194,7 @@ namespace RiseBot.Services
                     var opponents = currentWar.Opponent.Members.ToDictionary(x => x.Tag, x => x);
 
                     var notMirrored = currentWar.Clan.Members.Where(x =>
-                        x.Attacks.Any(y => opponents[y.DefenderTag].MapPosition != x.MapPosition)).ToArray();
+                        x.Attacks.All(y => opponents[y.DefenderTag].MapPosition != x.MapPosition)).ToArray();
 
                     var builder = new EmbedBuilder
                         {
@@ -190,6 +214,14 @@ namespace RiseBot.Services
                     await channel.SendMessageAsync(string.Join(' ',
                             inDiscord.Select(x => $"{_client.GetUser(x.Id)?.Mention ?? "{User Not Found}"}")),
                         embed: builder.Build());
+
+                    //deleting role because quicker than removing it from everyone
+                    await warRole.DeleteAsync();
+
+                    warRole = await discordGuild.CreateRoleAsync("InWar");
+                    await warRole.ModifyAsync(x => x.Mentionable = true);
+                    guild.InWarRoleId = warRole.Id;
+                    await _database.WriteEntityAsync(guild);
                 }
                 catch (TaskCanceledException)
                 {
