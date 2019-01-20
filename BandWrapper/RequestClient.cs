@@ -76,6 +76,7 @@ namespace BandWrapper
             catch (Exception ex)
             {
                 await _client.InternalLogReceivedAsync(ex.ToString());
+                _semaphore.Release();
                 return default;
             }
         }
