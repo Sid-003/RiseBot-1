@@ -91,7 +91,12 @@ namespace RiseBot.Services
             {
                 var result = await _commands.ExecuteAsync(output, context, _services);
 
-                if (!result.IsSuccessful)
+                if (result is CommandNotFoundResult)
+                {
+                    var emote = Emote.Parse("<:blobcatgooglythink:537634878250811403>");
+                    await message.AddReactionAsync(emote);
+                }
+                else if (!result.IsSuccessful)
                 {
                     var failed = result as FailedResult;
 

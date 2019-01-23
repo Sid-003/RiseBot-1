@@ -5,6 +5,7 @@ using Discord.WebSocket;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace RiseBot.Services
@@ -28,17 +29,21 @@ namespace RiseBot.Services
         private DateTimeOffset _start;
         private DateTimeOffset _end;
 
+        private CancellationTokenSource _tokenSource;
+
         public StartTimeService(DiscordSocketClient client, BandClient band, DatabaseService database)
         {
             _client = client;
             _band = band;
             _database = database;
+            _tokenSource = new CancellationTokenSource();
         }
 
         //TODO cancel reminders if time is changed
         public async Task StartServiceAsync()
         {
             var lastPostKey = "";
+            var lastTimePostKey = "";
             var handledPost = false;
 
             while (true)
@@ -72,8 +77,31 @@ namespace RiseBot.Services
                         continue;
                     }
 
+                    IList<FWARep> reps;
+                    Dictionary<ulong, (DateTimeOffset, DateTimeOffset)> times;
+
                     if (!(_client.GetChannel(guild.RepChannelId) is SocketTextChannel repChannel))
                         continue;
+
+                    if (post.Content.Contains("SYNC TIME HAS BEEN CHANGED", StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        _tokenSource.Cancel(true);
+
+                        post = await _band.GetPostAsync(BandKey, lastTimePostKey);
+                        _start = post.Schedule.Start;
+                        _end = post.Schedule.End;
+
+                        reps = guild.FWAReps;
+
+                        times = reps.ToDictionary(rep => rep.Id,
+                            rep => (_start.Add(TimeSpan.FromHours(rep.TimeZone)),
+                                _end.Add(TimeSpan.FromHours(rep.TimeZone))));
+
+                        await UpdateLastMessageAsync(times);
+                        await repChannel.SendMessageAsync("**<@&356176442716848132> START TIMES HAVE BEEN CHANGED!**");
+
+                        continue;
+                    }
 
                     //no one actually uses this, too lazy to get rid of it
                     if (_webhook is null)
@@ -111,14 +139,15 @@ namespace RiseBot.Services
                     if (!(_client.GetChannel(guild.StartTimeChannelId) is SocketTextChannel startChannel))
                         continue;
 
-                    _highSync = post.Schedule.Name.Contains("High");
+                    lastTimePostKey = lastPostKey;
+                    _highSync = post.Schedule.Name.Contains("High", StringComparison.InvariantCultureIgnoreCase);
 
                     _start = post.Schedule.Start;
                     _end = post.Schedule.End;
 
-                    var reps = guild.FWAReps;
+                    reps = guild.FWAReps;
 
-                    var times = reps.ToDictionary(rep => rep.Id,
+                    times = reps.ToDictionary(rep => rep.Id,
                         rep => (_start.Add(TimeSpan.FromHours(rep.TimeZone)),
                             _end.Add(TimeSpan.FromHours(rep.TimeZone))));
 
@@ -131,10 +160,18 @@ namespace RiseBot.Services
                     {
                         //TODO rep role in db
                         //why did I make this ugly
-                        Task.Delay(_start - DateTimeOffset.UtcNow - TimeSpan.FromMinutes(10)).ContinueWith(_ =>
-                                repChannel.SendMessageAsync("<@&356176442716848132> search is in 10 minutes!"))
-                            .ContinueWith(_ => Task.Delay(_start - DateTimeOffset.UtcNow)).ContinueWith(_ =>
-                                repChannel.SendMessageAsync("<@&356176442716848132> seasrch has started!"));
+                        try
+                        {
+                            Task.Delay(_start - DateTimeOffset.UtcNow - TimeSpan.FromMinutes(10)).ContinueWith(_ =>
+                                    repChannel.SendMessageAsync("<@&356176442716848132> search is in 10 minutes!"))
+                                .ContinueWith(_ => Task.Delay(_start - DateTimeOffset.UtcNow)).ContinueWith(_ =>
+                                        repChannel.SendMessageAsync("<@&356176442716848132> seasrch has started!"),
+                                    _tokenSource.Token);
+                        }
+                        catch (TaskCanceledException)
+                        {
+                            _tokenSource = new CancellationTokenSource();
+                        }
                     });
 #pragma warning restore 4014
                 }
