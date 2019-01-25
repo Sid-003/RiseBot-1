@@ -154,5 +154,19 @@ namespace RiseBot.Commands.Modules
 
             await SendMessageAsync($"!match {currentWar.Opponent.Tag}");
         }
+
+        [Command("notinclan")]
+        [RunMode(RunMode.Parallel)]
+        public async Task GetNotInClanAsync()
+        {
+            var guildsMembers = Guild.GuildMembers;
+            var clanMembers = await Clash.GetClanMembersAsync(Guild.ClanTag);
+
+            var notInClan = guildsMembers.Where(guildMember =>
+                !guildMember.Tags.Any(x => clanMembers.Select(y => y.Tag).Any(z => z == x))).ToArray();
+
+            await SendMessageAsync(string.Join('\n',
+                notInClan.Select(x => Context.Guild.GetUser(x.Id)?.GetDisplayName()).Where(y => !(y is null))));
+        }
     }
 }

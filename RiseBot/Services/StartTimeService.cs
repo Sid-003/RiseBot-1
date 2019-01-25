@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+#pragma warning disable 4014
 
 namespace RiseBot.Services
 {
@@ -100,6 +101,8 @@ namespace RiseBot.Services
                         await UpdateLastMessageAsync(times);
                         await repChannel.SendMessageAsync("**<@&356176442716848132> START TIMES HAVE BEEN CHANGED!**");
 
+                        Task.Run(() => RunRemindersAsync(repChannel));
+
                         continue;
                     }
 
@@ -154,26 +157,8 @@ namespace RiseBot.Services
                     var embed = BuildEmbed(times);
 
                     _lastMessage = await startChannel.SendMessageAsync("@everyone", embed: embed);
-
-#pragma warning disable 4014
-                    Task.Run(() =>
-                    {
-                        //TODO rep role in db
-                        //why did I make this ugly
-                        try
-                        {
-                            Task.Delay(_start - DateTimeOffset.UtcNow - TimeSpan.FromMinutes(10)).ContinueWith(_ =>
-                                    repChannel.SendMessageAsync("<@&356176442716848132> search is in 10 minutes!"))
-                                .ContinueWith(_ => Task.Delay(_start - DateTimeOffset.UtcNow)).ContinueWith(_ =>
-                                        repChannel.SendMessageAsync("<@&356176442716848132> seasrch has started!"),
-                                    _tokenSource.Token);
-                        }
-                        catch (TaskCanceledException)
-                        {
-                            _tokenSource = new CancellationTokenSource();
-                        }
-                    });
-#pragma warning restore 4014
+                    
+                    Task.Run(() => RunRemindersAsync(repChannel));
                 }
                 catch (Exception ex)
                 {
@@ -208,6 +193,25 @@ namespace RiseBot.Services
                 string.Join('\n',
                     times.Select(x =>
                         $"{_client.GetUser(x.Key).Mention} : **Start**, {x.Value.Item1:t} - **End**,{x.Value.Item2:t}"))).Build();
+        }
+
+        private async Task RunRemindersAsync(ISocketMessageChannel repChannel)
+        {
+            try
+            {
+                //TODO rep role in db
+                //why did I make this ugly
+                await Task.Delay(_start - DateTimeOffset.UtcNow - TimeSpan.FromMinutes(10)).ContinueWith(
+                    _ => repChannel.SendMessageAsync("<@&356176442716848132> search is in 10 minutes!"),
+                    _tokenSource.Token);
+                await Task.Delay(_start - DateTimeOffset.UtcNow).ContinueWith(
+                    _ => repChannel.SendMessageAsync("<@&356176442716848132> seasrch has started!"),
+                    _tokenSource.Token);
+            }
+            catch (TaskCanceledException)
+            {
+                _tokenSource = new CancellationTokenSource();
+            }
         }
     }
 }
