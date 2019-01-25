@@ -200,12 +200,12 @@ namespace RiseBot.Services
             try
             {
                 //TODO rep role in db
-                //why did I make this ugly
+                //for some reason _start - DateTimeOffset.UtcNow will send at the same time as _start - DateTimeOffset.Utc - TimeSpan.FromMinutes(10)
                 await Task.Delay(_start - DateTimeOffset.UtcNow - TimeSpan.FromMinutes(10)).ContinueWith(
                     _ => repChannel.SendMessageAsync("<@&356176442716848132> search is in 10 minutes!"),
                     _tokenSource.Token);
-                await Task.Delay(_start - DateTimeOffset.UtcNow).ContinueWith(
-                    _ => repChannel.SendMessageAsync("<@&356176442716848132> seasrch has started!"),
+                await Task.Delay(TimeSpan.FromMinutes(10)).ContinueWith(
+                    _ => repChannel.SendMessageAsync("<@&356176442716848132> search has started!"),
                     _tokenSource.Token);
             }
             catch (TaskCanceledException)

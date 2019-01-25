@@ -1,5 +1,6 @@
 ﻿using LiteDB;
 using System.Collections.Generic;
+using RiseBot.Entities;
 
 namespace RiseBot
 {
@@ -30,6 +31,10 @@ namespace RiseBot
         public ulong RepChannelId { get; set; }
         public ulong GeneralId { get; set; }
         public ulong InWarRoleId { get; set; }
+        public ulong EventRoleId { get; set; }
+        public ulong EventChannelId { get; set; }
+
+        public ulong EventMessageId { get; set; }
     }
 
     public class GuildMember : Entity
@@ -47,12 +52,18 @@ namespace RiseBot
         public double TimeZone { get; set; }
     }
 
-    public class Event : Entity
+    public class Event : Entity, IRemovable
     {
         public override ulong Id { get; set; }
-        public long Start { get; set; }
-        public long Duration { get; set; }
-        public ulong Author { get; set; }
-        public string Details { get; set; }
+
+        public string Description { get; set; }
+
+        public bool Mention { get; set; }
+
+        public int Month { get; set; }
+        public int Day { get; set; }
+        public int End { get; set; }
+
+        public long WhenToRemove { get; set; }
     }
 }
