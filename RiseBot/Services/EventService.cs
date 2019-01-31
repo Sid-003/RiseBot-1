@@ -51,6 +51,7 @@ namespace RiseBot.Services
             }
 
             var when = CalculateRemoveTime(month, day);
+            when = when < 0 ? 0 : when;
 
             var @event = new Event
             {
@@ -59,8 +60,7 @@ namespace RiseBot.Services
                 Month = month,
                 Day = day,
                 End = end,
-                Id = (ulong)_random.Next(),
-                WhenToRemove = when < 0 ? 0 : when
+                Id = (ulong)Random.Next()
             };
 
             Guild.Events.Add(@event);
@@ -73,7 +73,7 @@ namespace RiseBot.Services
 
             await message.ModifyAsync(x => x.Content = BuildMessage());
 
-            await _timer.EnqueueAsync(@event, async (key, removable) =>
+            await _timer.EnqueueAsync(@event, when, async (key, removable) =>
             {
                 @event = removable as Event;
                 var guild = _client.GetGuild(Guild.Id);
@@ -99,7 +99,7 @@ namespace RiseBot.Services
 
                 if (end > 0)
                 {
-                    await _timer.EnqueueAsync(@event,
+                    await _timer.EnqueueAsync(@event, end,
                         (key2, removable2) =>
                             channel.SendMessageAsync(
                                 $"{str}Event Ended! - {@event?.Description}"));

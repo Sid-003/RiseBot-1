@@ -1,6 +1,5 @@
 ﻿using LiteDB;
 using System.Collections.Generic;
-using RiseBot.Entities;
 
 namespace RiseBot
 {
@@ -52,7 +51,7 @@ namespace RiseBot
         public double TimeZone { get; set; }
     }
 
-    public class Event : Entity, IRemovable
+    public class Event : Entity
     {
         public override ulong Id { get; set; }
 
@@ -63,7 +62,5 @@ namespace RiseBot
         public int Month { get; set; }
         public int Day { get; set; }
         public int End { get; set; }
-
-        public long WhenToRemove { get; set; }
     }
 }

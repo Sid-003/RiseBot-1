@@ -1,5 +1,4 @@
-﻿using RiseBot.Entities;
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -28,12 +27,16 @@ namespace RiseBot.Services
             }, null, -1, -1);
         }
 
-        public async Task<string> EnqueueAsync(IRemovable removable, Func<string, IRemovable, Task> removeTask, bool setTimer = true)
+        public Task<string> EnqueueAsync(object removable, long whenToRemove, Func<string, object, Task> removeTask)
+            => EnqueueAsync(removable, whenToRemove, removeTask, true);
+
+        private async Task<string> EnqueueAsync(object removable, long whenToRemove, Func<string, object, Task> removeTask, bool setTimer)
         {
             var key = Guid.NewGuid().ToString();
             var task = new TaskObject
             {
                 Removable = removable,
+                WhenToRemove = whenToRemove,
                 RemoveTask = removeTask,
                 TaskKey = key
             };
@@ -45,7 +48,7 @@ namespace RiseBot.Services
 
         private Task EnqueueAsync(TaskObject task, bool setTimer)
         {
-            if (task.Removable.WhenToRemove > DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() + MaxTime)
+            if (task.WhenToRemove > DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() + MaxTime)
             {
                 task = new DelayedTask
                 {
@@ -75,7 +78,7 @@ namespace RiseBot.Services
 
             foreach (var item in _taskQueue)
             {
-                var whenToRemove = DateTimeOffset.FromUnixTimeMilliseconds(item is DelayedTask ? MaxTime : item.Removable.WhenToRemove);
+                var whenToRemove = DateTimeOffset.FromUnixTimeMilliseconds(item is DelayedTask ? MaxTime : item.WhenToRemove);
 
                 if (whenToRemove - DateTimeOffset.UtcNow < TimeSpan.FromSeconds(10))
                 {
@@ -86,13 +89,13 @@ namespace RiseBot.Services
                 keepList.Add(item);
             }
 
-            _taskQueue = new ConcurrentQueue<TaskObject>(keepList.OrderBy(x => x.Removable.WhenToRemove));
+            _taskQueue = new ConcurrentQueue<TaskObject>(keepList.OrderBy(x => x.WhenToRemove));
 
             if (_taskQueue.IsEmpty)
                 return Task.CompletedTask;
 
             var nextTask = _taskQueue.First();
-            _timer.Change(nextTask.Removable.WhenToRemove - DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), -1);
+            _timer.Change(nextTask.WhenToRemove - DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), -1);
 
             return Task.CompletedTask;
         }
@@ -109,8 +112,9 @@ namespace RiseBot.Services
 
         private class TaskObject
         {
-            public IRemovable Removable { get; set; }
-            public Func<string, IRemovable, Task> RemoveTask { get; set; }
+            public object Removable { get; set; }
+            public long WhenToRemove { get; set; }
+            public Func<string, object, Task> RemoveTask { get; set; }
             public string TaskKey { get; set; }
         }
 

@@ -161,10 +161,11 @@ namespace RiseBot.Services
                 ExecutingId = context.Message.Id,
                 UserId = context.User.Id,
                 ResponseId = sentMessage.Id,
-                WhenToRemove = DateTimeOffset.UtcNow.Add(MessageLifeTime).ToUnixTimeMilliseconds()
+                CreatedAt = sentMessage.CreatedAt.ToUnixTimeMilliseconds()
             };
 
-            var key = await _timer.EnqueueAsync(message, RemoveAsync);
+            var when = DateTimeOffset.UtcNow.Add(MessageLifeTime).ToUnixTimeMilliseconds();
+            var key = await _timer.EnqueueAsync(message, when, RemoveAsync);
 
             _messageCache[context.Channel.Id][context.User.Id][key] = message;
 
@@ -181,7 +182,7 @@ namespace RiseBot.Services
                 : Task.FromResult(message);
         }
 
-        private Task RemoveAsync(string key, IRemovable removable)
+        private Task RemoveAsync(string key, object removable)
         {
             var message = removable as CachedMessage;
             _messageCache[message.ChannelId][message.UserId].TryRemove(key, out _);
@@ -223,7 +224,7 @@ namespace RiseBot.Services
                     return;
                 }
 
-                var ordered = found.OrderByDescending(x => x.Value.WhenToRemove).ToImmutableArray();
+                var ordered = found.OrderByDescending(x => x.Value.CreatedAt).ToImmutableArray();
                 amount = amount > ordered.Length ? ordered.Length : amount;
 
                 var toDelete = new List<(string, CachedMessage)>();
