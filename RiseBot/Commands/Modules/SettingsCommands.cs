@@ -100,6 +100,20 @@ namespace RiseBot.Commands.Modules
             return SendMessageAsync("Event channel has been set");
         }
 
+        [Command("setcorole")]
+        public Task SetCoRoleAsync(SocketRole role)
+        {
+            Guild.CoRoleId = role.Id;
+            return SendMessageAsync("Co role has been set");
+        }
+
+        [Command("setelderrole")]
+        public Task SetElderRoleAsync(SocketRole role)
+        {
+            Guild.ElderRoleId = role.Id;
+            return SendMessageAsync("Elder role has been set");
+        }
+
         [Command("viewsettings")]
         public Task ViewSettingsAsync()
         {
@@ -117,7 +131,9 @@ namespace RiseBot.Commands.Modules
                 $"General: {Guild.GeneralId}",
                 $"WarRole: {Guild.InWarRoleId}",
                 $"EventRole: {Guild.EventRoleId}",
-                $"EventChannel: {Guild.EventChannelId}"
+                $"EventChannel: {Guild.EventChannelId}",
+                $"CoRole: {Guild.CoRoleId}",
+                $"ElderTole: {Guild.ElderRoleId}"
             };
 
             return SendMessageAsync(string.Join('\n', message));

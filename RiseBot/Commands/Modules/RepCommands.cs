@@ -12,6 +12,7 @@ namespace RiseBot.Commands.Modules
     [RequireRole("fwa representatives", Group = "perms")]
     public class RepCommands : RiseBase
     {
+        //TODO add/remove rep role
         public StartTimeService Start { get; set; }
 
         [Command("addrep")]
@@ -82,6 +83,9 @@ namespace RiseBot.Commands.Modules
 
             await SendMessageAsync("Role has been removed from everyone");
         }
+
+        //[Command("doroles")]
+        //public async Task DoRolesAsync()
 
         protected override Task AfterExecutedAsync(Command command)
         {

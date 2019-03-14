@@ -8,6 +8,7 @@ using Qmmands;
 using RiseBot.Services;
 using System;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace RiseBot
@@ -38,7 +39,7 @@ namespace RiseBot
                 Token = config.PushBulletToken,
                 UseCache = true
             });
-            
+
             _services = new ServiceCollection()
                 .AddSingleton(_client = new DiscordSocketClient(new DiscordSocketConfig
                 {
@@ -93,7 +94,7 @@ namespace RiseBot
             };
 
             var logger = _services.GetService<LogService>();
-            
+
             _client.Log += message =>
             {
                 var (source, severity, lMessage, exception) = LogFactory.FromDiscord(message);
@@ -118,7 +119,7 @@ namespace RiseBot
                 var (source, severity, lMessage) = LogFactory.FromPusharp(message);
                 return logger.LogAsync(source, severity, lMessage);
             };
-            
+
             await pushClient.ConnectAsync();
 
             await _client.LoginAsync(TokenType.Bot, config.BotToken);
@@ -129,7 +130,7 @@ namespace RiseBot
             await tcs.Task;
 
             _services.GetService<MessageService>();
-
+            
 #if !DEBUG
             Task.Run(() => _services.GetService<WarReminderService>().StartServiceAsync());
             Task.Run(() => _services.GetService<StartTimeService>().StartServiceAsync());

@@ -30,6 +30,9 @@ namespace RiseBot
         public ulong RepChannelId { get; set; }
         public ulong GeneralId { get; set; }
         public ulong InWarRoleId { get; set; }
+        public ulong CoRoleId { get; set; }
+        public ulong ElderRoleId { get; set; }
+
         public ulong EventRoleId { get; set; }
         public ulong EventChannelId { get; set; }
 

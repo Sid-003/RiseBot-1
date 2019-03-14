@@ -196,14 +196,15 @@ namespace RiseBot.Services
                     var notMirrored = currentWar.Clan.Members.Where(x =>
                         x.Attacks.All(y => opponents[y.DefenderTag].MapPosition != x.MapPosition)).ToArray();
 
+                    var names = string.Join('\n',
+                        inDiscord.Select(x => $"{_client.GetUser(x.Id)?.Mention ?? "{User Not Found}"}"));
+
                     var builder = new EmbedBuilder
-                        {
-                            Title = "War Breakdown",
-                            Color = new Color(0x21a9ff)
-                        }
-                        .AddField("Missed Both Attacks",
-                            string.Join('\n',
-                                inDiscord.Select(x => $"{_client.GetUser(x.Id)?.Mention ?? "{User Not Found}"}")));
+                    {
+                        Title = "War Breakdown",
+                        Color = new Color(0x21a9ff)
+                    }
+                        .AddField("Missed Attacks", string.IsNullOrWhiteSpace(names) ? "None :D" : names);                      
 
                     if (notMirrored.Length > 0)
                     {

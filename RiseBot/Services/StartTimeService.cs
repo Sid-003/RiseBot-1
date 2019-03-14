@@ -210,6 +210,7 @@ namespace RiseBot.Services
             }
             catch (TaskCanceledException)
             {
+                _tokenSource.Dispose();
                 _tokenSource = new CancellationTokenSource();
             }
         }
