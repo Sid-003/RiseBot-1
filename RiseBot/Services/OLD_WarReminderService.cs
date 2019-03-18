@@ -1,4 +1,5 @@
-﻿using ClashWrapper;
+﻿/*
+using ClashWrapper;
 using ClashWrapper.Entities.War;
 using Discord;
 using Discord.WebSocket;
@@ -237,3 +238,4 @@ namespace RiseBot.Services
         }
     }
 }
+*/

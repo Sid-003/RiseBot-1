@@ -130,9 +130,10 @@ namespace RiseBot
             await tcs.Task;
 
             _services.GetService<MessageService>();
-            
+
 #if !DEBUG
-            Task.Run(() => _services.GetService<WarReminderService>().StartServiceAsync());
+            Task.Run(() => _services.GetService<WarReminderService>().StartPollingServiceAsync());
+            Task.Run(() => _services.GetService<WarReminderService>().StartRemindersAsync());
             Task.Run(() => _services.GetService<StartTimeService>().StartServiceAsync());
 #endif
 
