@@ -106,34 +106,6 @@ namespace RiseBot.Services
                         continue;
                     }
 
-                    //no one actually uses this, too lazy to get rid of it
-                    if (_webhook is null)
-                    {
-                        var webhooks = await repChannel.GetWebhooksAsync();
-                        var bandHook = webhooks.FirstOrDefault(x => x.Name == "Band");
-
-                        _webhook = new DiscordWebhookClient(bandHook);
-                    }
-
-                    //var builder = new EmbedBuilder
-                    //{
-                    //Title = post.Schedule is null ? "New FWA Post!" : post.Schedule.Name,
-                    //Description = post.Content.Length > 2048 ? post.Content.Substring(0, 2048) : post.Content,
-                    //ThumbnailUrl = "https://upload.wikimedia.org/wikipedia/commons/3/30/2._BAND_Icon.png",
-                    //Color = new Color(0x11f711)
-                    //};
-
-                    if (_webhook is null)
-                    {
-                        //await repChannel.SendMessageAsync(string.Empty, embed: builder.Build());
-                        await repChannel.SendMessageAsync("There is a new post in the sync band");
-                    }
-                    else
-                    {
-                        //await _webhook.SendMessageAsync(string.Empty, embeds: new[] { builder.Build() });
-                        await _webhook.SendMessageAsync("There is a new post in the sync band");
-                    }
-
                     handledPost = true;
 
                     if (post.Schedule is null)

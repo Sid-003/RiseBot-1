@@ -164,8 +164,8 @@ namespace RiseBot.Services
                                 var difference = currentWar.EndTime - DateTimeOffset.UtcNow;
 
                                 lastState = difference > TimeSpan.FromHours(1) 
-                                    ? ReminderState.Start
-                                    : ReminderState.BeforeEnd;
+                                    ? ReminderState.InPrep
+                                    : ReminderState.Start;
 
                                 break;
                         }
@@ -209,21 +209,18 @@ namespace RiseBot.Services
                     }
 
                     var highTagIsClanTag = lottoDraw.HighSyncWinnerTag == lottoDraw.ClanTag;
-                    var highSyncWinner =
-                        highTagIsClanTag ? lottoDraw.ClanName : lottoDraw.OpponentName;
-                    var lowSyncWinner =
-                        highTagIsClanTag ? lottoDraw.OpponentName : lottoDraw.ClanName;
                     var sync = highSync == true ? "high" : "low";
-                    var winner = highSync == true ? highSyncWinner : lowSyncWinner;
+                    var win = highSync == true ? highTagIsClanTag ? "wins" : "loses" : highTagIsClanTag ? "loses" : "wins";
 
                     await channel.SendMessageAsync(
-                        $"```css\nIt is a {sync}-sync war and {winner} wins!\n{result.WarLogComparison}```");
+                        $"```css\nIt is a {sync}-sync war and Reddit Rise {win}!\n{result.WarLogComparison}```");
                     break;
 
                 case LottoFailed lottoFailed:
                     await channel.SendMessageAsync(lottoFailed.Reason);
 
                     _cancellationTokenSource.Cancel(true);
+                    _cancellationTokenSource.Dispose();
                     _cancellationTokenSource = new CancellationTokenSource();
                     break;
 
