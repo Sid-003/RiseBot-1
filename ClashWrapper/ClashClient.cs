@@ -1,8 +1,10 @@
 ﻿using ClashWrapper.Entities;
 using ClashWrapper.Entities.ClanMembers;
+using ClashWrapper.Entities.Player;
 using ClashWrapper.Entities.War;
 using ClashWrapper.Entities.WarLog;
 using ClashWrapper.Models.ClanMembers;
+using ClashWrapper.Models.Player;
 using ClashWrapper.Models.War;
 using ClashWrapper.Models.WarLog;
 using System;
@@ -114,6 +116,22 @@ namespace ClashWrapper
                 () => model.ClanMembers.Length);
 
             return collection;
+        }
+
+        public async Task<Player> GetPlayerAsync(string playerTag)
+        {
+            if (string.IsNullOrWhiteSpace(playerTag))
+                throw new ArgumentNullException(playerTag);
+
+            playerTag = playerTag[0] == '#' ? playerTag.Replace("#", "%23") : playerTag;
+
+            var model = await _request.SendAsync<PlayerModel>($"/v1/players/{playerTag}")
+                .ConfigureAwait(false);
+
+            if (model is null)
+                return null;
+
+            return new Player(model);
         }
     }
 }

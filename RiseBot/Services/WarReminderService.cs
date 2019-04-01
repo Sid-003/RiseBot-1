@@ -2,7 +2,6 @@
 using ClashWrapper.Entities.War;
 using Discord;
 using Discord.WebSocket;
-using Pusharp.Entities;
 using RiseBot.Results;
 using System;
 using System.Collections.Generic;
@@ -66,117 +65,133 @@ namespace RiseBot.Services
 
             while (true)
             {
-                switch (lastState)
+                try
                 {
-                    case ReminderState.InPrep:
+                    switch (lastState)
+                    {
+                        case ReminderState.InPrep:
 
-                        currentWar = await _clash.GetCurrentWarAsync(ClanTag);
+                            currentWar = await _clash.GetCurrentWarAsync(ClanTag);
 
-                        if (currentWar.State == WarState.InWar)
-                        {
-                            lastState = ReminderState.Start;
+                            if (currentWar is null)
+                                break;
 
-                            await channel.SendMessageAsync($"<@&{guild.InWarRoleId}> war has started!");
-
-                            try
+                            if (currentWar.State == WarState.InWar)
                             {
-                                delay = currentWar.EndTime - DateTimeOffset.UtcNow.AddHours(1);
-                                await Task.Delay(delay, _cancellationTokenSource.Token);
-                            }
-                            catch (TaskCanceledException)
-                            {
-                                lastState = ReminderState.Maintenance;
-                            }
-                        }
+                                lastState = ReminderState.Start;
 
-                        break;
-
-                    case ReminderState.Start:
-
-                        currentWar = await _clash.GetCurrentWarAsync(ClanTag);
-
-                        await NeedToAttackAsync(channel, guild.GuildMembers, currentWar);
-
-                        lastState = ReminderState.BeforeEnd;
-
-                        try
-                        {
-                            delay = currentWar.EndTime - DateTimeOffset.UtcNow;
-                            await Task.Delay(delay, _cancellationTokenSource.Token);
-                        }
-                        catch (TaskCanceledException)
-                        {
-                            lastState = ReminderState.Maintenance;
-                        }
-
-                        break;
-
-                    case ReminderState.BeforeEnd:
-
-                        currentWar = await _clash.GetCurrentWarAsync(ClanTag);
-
-                        if (currentWar.State == WarState.Ended)
-                        {
-                            lastState = ReminderState.Ended;
-                            alreadyMatched = false;
-
-                            await WarEndedAsync(channel, guild.GuildMembers, currentWar);
-                        }
-
-                        break;
-
-                    case ReminderState.None:
-                    case ReminderState.Ended:
-
-                        currentWar = await _clash.GetCurrentWarAsync(ClanTag);
-
-                        if (currentWar is null)
-                            continue;
-
-                        switch (currentWar.State)
-                        {
-                            case WarState.Preparation:
-
-                                lastState = ReminderState.InPrep;
-
-                                if(!alreadyMatched)
-                                {
-                                    await WarMatchAsync(channel, guild, discordGuild, currentWar);
-
-                                    alreadyMatched = true;
-                                }
+                                await channel.SendMessageAsync($"<@&{guild.InWarRoleId}> war has started!");
 
                                 try
                                 {
-                                    delay = currentWar.StartTime - DateTimeOffset.UtcNow;
+                                    delay = currentWar.EndTime - DateTimeOffset.UtcNow.AddHours(1);
                                     await Task.Delay(delay, _cancellationTokenSource.Token);
                                 }
                                 catch (TaskCanceledException)
                                 {
                                     lastState = ReminderState.Maintenance;
                                 }
+                            }
 
+                            break;
+
+                        case ReminderState.Start:
+
+                            currentWar = await _clash.GetCurrentWarAsync(ClanTag);
+
+                            if (currentWar is null)
                                 break;
 
+                            await NeedToAttackAsync(channel, guild.GuildMembers, currentWar);
 
-                            case WarState.InWar:
+                            lastState = ReminderState.BeforeEnd;
 
-                                var difference = currentWar.EndTime - DateTimeOffset.UtcNow;
+                            try
+                            {
+                                delay = currentWar.EndTime - DateTimeOffset.UtcNow;
+                                await Task.Delay(delay, _cancellationTokenSource.Token);
+                            }
+                            catch (TaskCanceledException)
+                            {
+                                lastState = ReminderState.Maintenance;
+                            }
 
-                                lastState = difference > TimeSpan.FromHours(1) 
-                                    ? ReminderState.InPrep
-                                    : ReminderState.Start;
+                            break;
 
+                        case ReminderState.BeforeEnd:
+
+                            currentWar = await _clash.GetCurrentWarAsync(ClanTag);
+
+                            if (currentWar is null)
                                 break;
-                        }
 
-                        break;
+                            if (currentWar.State == WarState.Ended)
+                            {
+                                lastState = ReminderState.Ended;
+                                alreadyMatched = false;
 
-                    case ReminderState.Maintenance:
+                                await WarEndedAsync(channel, guild.GuildMembers, currentWar);
+                            }
 
-                        await Task.Delay(TimeSpan.FromSeconds(50));
+                            break;
 
-                        break;
+                        case ReminderState.None:
+                        case ReminderState.Ended:
+
+                            currentWar = await _clash.GetCurrentWarAsync(ClanTag);
+
+                            if (currentWar is null)
+                                break;
+
+                            switch (currentWar.State)
+                            {
+                                case WarState.Preparation:
+
+                                    lastState = ReminderState.InPrep;
+
+                                    if (!alreadyMatched)
+                                    {
+                                        await WarMatchAsync(channel, guild, discordGuild, currentWar);
+
+                                        alreadyMatched = true;
+                                    }
+
+                                    try
+                                    {
+                                        delay = currentWar.StartTime - DateTimeOffset.UtcNow;
+                                        await Task.Delay(delay, _cancellationTokenSource.Token);
+                                    }
+                                    catch (TaskCanceledException)
+                                    {
+                                        lastState = ReminderState.Maintenance;
+                                    }
+
+                                    break;
+
+
+                                case WarState.InWar:
+
+                                    var difference = currentWar.EndTime - DateTimeOffset.UtcNow;
+
+                                    lastState = difference > TimeSpan.FromHours(1)
+                                        ? ReminderState.InPrep
+                                        : ReminderState.Start;
+
+                                    break;
+                            }
+
+                            break;
+
+                        case ReminderState.Maintenance:
+
+                            await Task.Delay(TimeSpan.FromSeconds(50));
+
+                            break;
+                    }
+                }
+                catch(Exception ex)
+                {
+                    await _logger.LogAsync(Source.Reminder, Severity.Error, string.Empty, ex);
                 }
 
                 await Task.Delay(TimeSpan.FromSeconds(10));
@@ -188,7 +203,7 @@ namespace RiseBot.Services
             while (true)
             {
                 await _clash.GetCurrentWarAsync(ClanTag);
-                await Task.Delay(TimeSpan.FromMinutes(1));
+                await Task.Delay(TimeSpan.FromMinutes(5));
             }
         }
 

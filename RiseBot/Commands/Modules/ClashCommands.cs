@@ -150,5 +150,29 @@ namespace RiseBot.Commands.Modules
 
             await SendMessageAsync($"__**People with >50% missed attacks**__\n{message}");
         }
+
+        [Command("profile")]
+        public async Task ViewProfileAsync(string tag)
+        {
+            var player = await Clash.GetPlayerAsync(tag);
+
+            if(player is null)
+            {
+                await SendMessageAsync("Failed to find player.");
+                return;
+            }
+
+            var builder = new EmbedBuilder
+            {
+                Title = $"{player.Name}{player.Tag}",
+                Color = Color.Blue,
+                Description = $"Townhall: {player.TownHallLevel}"
+            };
+
+            builder.AddField("Heroes", string.Join("\n", player.Heroes.Where(x => x.Village == "home").Select(x => $"{x.Name}: **{x.Level}**")));
+            builder.AddField("Troops", string.Join("\n", player.Troops.Where(x => x.Village == "home").Select(x => $"{x.Name}: **{x.Level}**")));
+
+            await SendMessageAsync(string.Empty, builder.Build());
+        }
     }
 }
