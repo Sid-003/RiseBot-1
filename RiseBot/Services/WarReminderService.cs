@@ -20,7 +20,8 @@ namespace RiseBot.Services
         private readonly StartTimeService _start;
         private readonly LogService _logger;
 
-        private CancellationTokenSource _cancellationTokenSource;
+        private CancellationTokenSource _maintenanceCts;
+        private CancellationTokenSource _noMaintenanceCts;
 
         private const string ClanTag = "#2GGCRC90";
 
@@ -33,18 +34,19 @@ namespace RiseBot.Services
             _start = start;
             _logger = logger;
 
-            _cancellationTokenSource = new CancellationTokenSource();
+            _maintenanceCts = new CancellationTokenSource();
+            _noMaintenanceCts = new CancellationTokenSource();
 
             _clash.Error += (message) =>
             {
                 if (message.Reason != "inMaintenance")
                     return Task.CompletedTask;
 
-                if (!_cancellationTokenSource.IsCancellationRequested)
+                if (!_maintenanceCts.IsCancellationRequested)
                 {
-                    _cancellationTokenSource.Cancel(true);
-                    _cancellationTokenSource.Dispose();
-                    _cancellationTokenSource = new CancellationTokenSource();
+                    _maintenanceCts.Cancel(true);
+                    _maintenanceCts.Dispose();
+                    _maintenanceCts = new CancellationTokenSource();
                 }
 
                 return _logger.LogAsync(Source.Reminder, Severity.Verbose, "Maintenance break");
@@ -85,11 +87,13 @@ namespace RiseBot.Services
                                 try
                                 {
                                     delay = currentWar.EndTime - DateTimeOffset.UtcNow.AddHours(1);
-                                    await Task.Delay(delay, _cancellationTokenSource.Token);
+                                    await Task.Delay(delay, _maintenanceCts.Token);
                                 }
                                 catch (TaskCanceledException)
                                 {
                                     lastState = ReminderState.Maintenance;
+
+                                    await channel.SendMessageAsync("Maintenance started");
                                 }
                             }
 
@@ -109,11 +113,13 @@ namespace RiseBot.Services
                             try
                             {
                                 delay = currentWar.EndTime - DateTimeOffset.UtcNow;
-                                await Task.Delay(delay, _cancellationTokenSource.Token);
+                                await Task.Delay(delay, _maintenanceCts.Token);
                             }
                             catch (TaskCanceledException)
                             {
                                 lastState = ReminderState.Maintenance;
+
+                                await channel.SendMessageAsync("Maintenance started");
                             }
 
                             break;
@@ -159,11 +165,13 @@ namespace RiseBot.Services
                                     try
                                     {
                                         delay = currentWar.StartTime - DateTimeOffset.UtcNow;
-                                        await Task.Delay(delay, _cancellationTokenSource.Token);
+                                        await Task.Delay(delay, _maintenanceCts.Token);
                                     }
                                     catch (TaskCanceledException)
                                     {
                                         lastState = ReminderState.Maintenance;
+
+                                        await channel.SendMessageAsync("Maintenance started");
                                     }
 
                                     break;
@@ -184,12 +192,21 @@ namespace RiseBot.Services
 
                         case ReminderState.Maintenance:
 
-                            await Task.Delay(TimeSpan.FromSeconds(50));
+                            try
+                            {
+                                await Task.Delay(TimeSpan.FromMinutes(10), _noMaintenanceCts.Token);
+                            }
+                            catch (TaskCanceledException)
+                            {
+                                lastState = ReminderState.None;
+
+                                await channel.SendMessageAsync("Maintenance ended");
+                            }
 
                             break;
                     }
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     await _logger.LogAsync(Source.Reminder, Severity.Error, string.Empty, ex);
                 }
@@ -202,7 +219,15 @@ namespace RiseBot.Services
         {
             while (true)
             {
-                await _clash.GetCurrentWarAsync(ClanTag);
+                var res = await _clash.GetCurrentWarAsync(ClanTag);
+
+                if (!(res is null))
+                {
+                    _noMaintenanceCts.Cancel(true);
+                    _noMaintenanceCts.Dispose();
+                    _noMaintenanceCts = new CancellationTokenSource();
+                }
+
                 await Task.Delay(TimeSpan.FromMinutes(5));
             }
         }
@@ -234,9 +259,9 @@ namespace RiseBot.Services
                 case LottoFailed lottoFailed:
                     await channel.SendMessageAsync(lottoFailed.Reason);
 
-                    _cancellationTokenSource.Cancel(true);
-                    _cancellationTokenSource.Dispose();
-                    _cancellationTokenSource = new CancellationTokenSource();
+                    _maintenanceCts.Cancel(true);
+                    _maintenanceCts.Dispose();
+                    _maintenanceCts = new CancellationTokenSource();
                     break;
 
                 case LottoResult lottoResult:
@@ -323,7 +348,7 @@ namespace RiseBot.Services
             {
                 builder.AddField("Didn't Attack Mirror",
                     string.Join('\n', notMirrored.Select(x => $"{x.Name}")));
-}
+            }
 
             await channel.SendMessageAsync(string.Join(' ',
                     inDiscord.Select(x => $"{_client.GetUser(x.Id)?.Mention ?? "{User Not Found}"}")),
