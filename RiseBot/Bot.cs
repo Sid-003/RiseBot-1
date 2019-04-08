@@ -3,12 +3,10 @@ using ClashWrapper;
 using Discord;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
-using Pusharp;
 using Qmmands;
 using RiseBot.Services;
 using System;
 using System.Reflection;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace RiseBot
@@ -33,13 +31,6 @@ namespace RiseBot
                 Token = config.BandToken
             });
 
-            var pushClient = new PushBulletClient(new PushBulletClientConfig
-            {
-                LogLevel = LogLevel.Verbose,
-                Token = config.PushBulletToken,
-                UseCache = true
-            });
-
             _services = new ServiceCollection()
                 .AddSingleton(_client = new DiscordSocketClient(new DiscordSocketConfig
                 {
@@ -54,7 +45,6 @@ namespace RiseBot
                     .AddTypeParsers())
                 .AddSingleton(clashClient)
                 .AddSingleton(bandClient)
-                .AddSingleton(pushClient)
                 .AddServices()
                 .BuildServiceProvider();
 
@@ -113,14 +103,6 @@ namespace RiseBot
 
             bandClient.Log += message => logger.LogAsync(Source.Band, Severity.Verbose, message);
             bandClient.Error += error => logger.LogAsync(Source.Band, Severity.Error, error.Message);
-
-            pushClient.Log += message =>
-            {
-                var (source, severity, lMessage) = LogFactory.FromPusharp(message);
-                return logger.LogAsync(source, severity, lMessage);
-            };
-
-            await pushClient.ConnectAsync();
 
             await _client.LoginAsync(TokenType.Bot, config.BotToken);
             await _client.StartAsync();

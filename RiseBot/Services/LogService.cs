@@ -1,6 +1,4 @@
-﻿using Pusharp;
-using Pusharp.Entities;
-using System;
+﻿using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,14 +8,10 @@ namespace RiseBot.Services
     [Service]
     public class LogService
     {
-        private readonly PushBulletClient _push;
         private readonly SemaphoreSlim _semaphore;
 
-        private Device Phone => _push.Devices.First(x => x.IsActive);
-
-        public LogService(PushBulletClient push)
+        public LogService()
         {
-            _push = push;
             _semaphore = new SemaphoreSlim(1);
         }
 
@@ -33,11 +27,6 @@ namespace RiseBot.Services
             {
                 case Severity.Critical:
                     Console.ForegroundColor = ConsoleColor.DarkRed;
-                    await Phone.SendNoteAsync(x =>
-                    {
-                        x.Title = "Critical Error";
-                        x.Body = $"{message}\n{ex}";
-                    });
                     break;
                 case Severity.Error:
                     Console.ForegroundColor = ConsoleColor.Red;

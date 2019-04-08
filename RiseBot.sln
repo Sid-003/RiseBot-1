@@ -1,15 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27703.2047
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.28729.10
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RiseBot", "RiseBot\RiseBot.csproj", "{9B5B1187-D860-460A-8EFF-5BB638538AC8}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ClashWrapper", "ClashWrapper\ClashWrapper.csproj", "{F66FCC41-6A60-4EFA-8479-D2FFF1CC8275}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BandWrapper", "BandWrapper\BandWrapper.csproj", "{1126FB45-F5B7-4790-8D27-E77CB5D2A5F1}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Pusharp", "..\Pusharp\Pusharp\Pusharp.csproj", "{C01A504E-5822-48EF-B3B5-0999103156BE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -29,10 +27,6 @@ Global
 		{1126FB45-F5B7-4790-8D27-E77CB5D2A5F1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1126FB45-F5B7-4790-8D27-E77CB5D2A5F1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1126FB45-F5B7-4790-8D27-E77CB5D2A5F1}.Release|Any CPU.Build.0 = Release|Any CPU
-		{C01A504E-5822-48EF-B3B5-0999103156BE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{C01A504E-5822-48EF-B3B5-0999103156BE}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{C01A504E-5822-48EF-B3B5-0999103156BE}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{C01A504E-5822-48EF-B3B5-0999103156BE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
