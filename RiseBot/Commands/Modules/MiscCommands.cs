@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Casino.Common.Discord.Net;
+using Discord.WebSocket;
 
 namespace RiseBot.Commands.Modules
 {
@@ -117,11 +119,13 @@ namespace RiseBot.Commands.Modules
             await SendMessageAsync($"```css\n{sb}```");
         }
 
-        [Command("mytags")]
+        [Command("mytags", "tags")]
         [RunMode(RunMode.Parallel)]
-        public async Task GetTagsAsync()
+        public async Task GetTagsAsync(SocketGuildUser user = null)
         {
-            var guildMember = Guild.GuildMembers.FirstOrDefault(x => x.Id == Context.User.Id);
+            user = user ?? Context.User;
+
+            var guildMember = Guild.GuildMembers.FirstOrDefault(x => x.Id == user.Id);
 
             if (guildMember is null)
             {
@@ -167,6 +171,24 @@ namespace RiseBot.Commands.Modules
 
             await SendMessageAsync(string.Join('\n',
                 notInClan.Select(x => Context.Guild.GetUser(x.Id)?.GetDisplayName()).Where(y => !(y is null))));
+        }
+
+        [Command("nonotifs")]
+        public Task NoNotifsAsync()
+        {
+            var roleId = Guild.NoNotifsRoleId;
+            var role = Context.Guild.GetRole(roleId);
+
+            return Task.WhenAll(Context.User.AddRoleAsync(role), SendMessageAsync("You'll no longer get notifications"));
+        }
+
+        [Command("notifs")]
+        public Task NotifsAsync()
+        {
+            var roleId = Guild.NoNotifsRoleId;
+            var role = Context.Guild.GetRole(roleId);
+
+            return Task.WhenAll(Context.User.RemoveRoleAsync(role), SendMessageAsync("You'll get notifications"));
         }
     }
 }

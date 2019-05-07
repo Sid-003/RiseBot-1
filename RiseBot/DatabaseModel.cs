@@ -37,6 +37,8 @@ namespace RiseBot
         public ulong EventChannelId { get; set; }
 
         public ulong EventMessageId { get; set; }
+
+        public ulong NoNotifsRoleId { get; set; }
     }
 
     public class GuildMember : Entity

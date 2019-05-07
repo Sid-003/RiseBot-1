@@ -114,6 +114,13 @@ namespace RiseBot.Commands.Modules
             return SendMessageAsync("Elder role has been set");
         }
 
+        [Command("setnonotifsrole")]
+        public Task SetNoNotifsRoleAsync(SocketRole role)
+        {
+            Guild.NoNotifsRoleId = role.Id;
+            return SendMessageAsync("No notifs role has been set");
+        }
+
         [Command("viewsettings")]
         public Task ViewSettingsAsync()
         {
@@ -133,13 +140,14 @@ namespace RiseBot.Commands.Modules
                 $"EventRole: {Guild.EventRoleId}",
                 $"EventChannel: {Guild.EventChannelId}",
                 $"CoRole: {Guild.CoRoleId}",
-                $"ElderTole: {Guild.ElderRoleId}"
+                $"ElderTole: {Guild.ElderRoleId}",
+                $"No notifs role: {Guild.NoNotifsRoleId}"
             };
 
             return SendMessageAsync(string.Join('\n', message));
         }
 
-        protected override Task AfterExecutedAsync(Command command)
+        protected override Task AfterExecutedAsync()
         {
             Database.UpdateGuild();
             return Task.CompletedTask;

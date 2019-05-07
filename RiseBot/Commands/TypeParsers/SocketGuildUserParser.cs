@@ -10,7 +10,7 @@ namespace RiseBot.Commands.TypeParsers
 {
     public sealed class SocketUserParser : TypeParser<SocketGuildUser>
     {
-        public override Task<TypeParserResult<SocketGuildUser>> ParseAsync(string value, ICommandContext ctx,
+        public override ValueTask<TypeParserResult<SocketGuildUser>> ParseAsync(Parameter param, string value, CommandContext ctx,
             IServiceProvider provider)
         {
             var context = ctx as RiseContext;
@@ -34,22 +34,21 @@ namespace RiseBot.Commands.TypeParsers
             }
 
             if (user != null)
-                return Task.FromResult(new TypeParserResult<SocketGuildUser>(user));
+                new TypeParserResult<SocketGuildUser>(user);
 
             IReadOnlyList<SocketGuildUser> matchingUsers = context.Guild != null
                 ? users.Where(x => x.Username == value || x.Nickname == value).ToImmutableArray()
                 : users.Where(x => x.Username == value).ToImmutableArray();
 
             if (matchingUsers.Count > 1)
-                return Task.FromResult(
-                    new TypeParserResult<SocketGuildUser>("Multiple matches found. Mention the user or use their ID."));
+                new TypeParserResult<SocketGuildUser>("Multiple matches found. Mention the user or use their ID.");
 
             if (matchingUsers.Count == 1)
                 user = matchingUsers[0];
 
             return user == null
-                ? Task.FromResult(new TypeParserResult<SocketGuildUser>("No user found matching the input."))
-                : Task.FromResult(new TypeParserResult<SocketGuildUser>(user));
+                ? new TypeParserResult<SocketGuildUser>("No user found matching the input.")
+                : new TypeParserResult<SocketGuildUser>(user);
         }
     }
 }

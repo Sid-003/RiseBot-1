@@ -57,18 +57,20 @@ namespace RiseBot.Services
         {
             var lastState = ReminderState.None;
 
-            CurrentWar currentWar;
-            TimeSpan delay;
             var alreadyMatched = false;
+            var alreadyStarted = false;
 
             var guild = _database.Guild;
             var channel = _client.GetChannel(guild.WarChannelId) as SocketTextChannel;
-            var discordGuild = channel.Guild;
+            var discordGuild = channel?.Guild;
 
             while (true)
             {
                 try
                 {
+                    CurrentWar currentWar;
+                    TimeSpan delay;
+
                     switch (lastState)
                     {
                         case ReminderState.InPrep:
@@ -82,7 +84,13 @@ namespace RiseBot.Services
                             {
                                 lastState = ReminderState.Start;
 
-                                await channel.SendMessageAsync($"<@&{guild.InWarRoleId}> war has started!");
+                                if (!alreadyStarted)
+                                {
+                                    var role = await GetOrCreateRoleAsync(discordGuild, guild);
+                                    await channel.SendMessageAsync($"{role.Mention} war has started!");
+                                }
+
+                                alreadyStarted = true;
 
                                 try
                                 {
@@ -143,6 +151,8 @@ namespace RiseBot.Services
 
                         case ReminderState.None:
                         case ReminderState.Ended:
+
+                            alreadyStarted = false;
 
                             currentWar = await _clash.GetCurrentWarAsync(ClanTag);
 
@@ -215,6 +225,20 @@ namespace RiseBot.Services
             }
         }
 
+        public async ValueTask<IRole> GetOrCreateRoleAsync(IGuild guild, Guild dbGuild)
+        {
+            if (guild.Roles.FirstOrDefault(x => x.Id == dbGuild.InWarRoleId) is IRole role)
+                return role;
+
+            role = await guild.CreateRoleAsync("InWar");
+
+            dbGuild.InWarRoleId = role.Id;
+
+            _database.UpdateGuild();
+
+            return role;
+        }
+
         public async Task StartPollingServiceAsync()
         {
             while (true)
@@ -274,29 +298,23 @@ namespace RiseBot.Services
                     break;
             }
 
-            if (!(discordGuild.GetRole(guild.InWarRoleId) is IRole warRole))
-            {
-                warRole = await discordGuild.CreateRoleAsync("InWar");
-                await warRole.ModifyAsync(x => x.Mentionable = true);
-                guild.InWarRoleId = warRole.Id;
-
-                _database.UpdateGuild();
-            }
+            var warRole = await GetOrCreateRoleAsync(discordGuild, guild);
 
             var inWar = currentWar.Clan.Members;
             var guildMembers = guild.GuildMembers;
             var inDiscord = guildMembers.Where(guildMember =>
                 guildMember.Tags.Any(tag => inWar.Any(x => x.Tag == tag))).ToArray();
 
-            var foundMembers = inDiscord.Select(x => discordGuild.GetUser(x.Id)).Where(y => !(y is null));
+            var foundMembers = inDiscord.Select(x => discordGuild.GetUser(x.Id)).Where(y => !(y is null)).ToArray();
 
             foreach (var found in foundMembers)
             {
-                await found.AddRoleAsync(warRole);
+                if(found.Roles.Any(x => x.Id != guild.NoNotifsRoleId))
+                    await found.AddRoleAsync(warRole);
             }
         }
 
-        private async Task NeedToAttackAsync(SocketTextChannel channel, IList<GuildMember> guildMembers, CurrentWar currentWar)
+        private async Task NeedToAttackAsync(ISocketMessageChannel channel, IEnumerable<GuildMember> guildMembers, CurrentWar currentWar)
         {
             var needToAttack = currentWar.Clan.Members.Where(x => x.Attacks.Count < 2).ToArray();
 

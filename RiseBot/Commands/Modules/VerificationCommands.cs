@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Casino.Common.Discord.Net;
 
 namespace RiseBot.Commands.Modules
 {
@@ -48,7 +49,7 @@ namespace RiseBot.Commands.Modules
                 }
             });
 
-            _ = user.ModifyAsync(x => x.Nickname = clanMember.Name);
+            await user.ModifyAsync(x => x.Nickname = clanMember.Name);
 
             var verifiedRole = Context.Guild.GetRole(Guild.VerifiedRoleId);
             await user.AddRoleAsync(verifiedRole);
@@ -123,7 +124,7 @@ namespace RiseBot.Commands.Modules
             return SendMessageAsync("Tag has been removed");
         }
 
-        protected override Task AfterExecutedAsync(Command command)
+        protected override Task AfterExecutedAsync()
         {
             Database.UpdateGuild();
             return Task.CompletedTask;

@@ -3,6 +3,7 @@ using Discord.WebSocket;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Casino.Common;
 
 namespace RiseBot.Services
 {
@@ -11,7 +12,7 @@ namespace RiseBot.Services
     {
         private readonly DatabaseService _database;
         private readonly DiscordSocketClient _client;
-        private readonly TimerService _timer;
+        private readonly TaskQueue _scheduler;
         private Random _random;
 
         private Guild Guild => _database.Guild;
@@ -33,11 +34,11 @@ namespace RiseBot.Services
             [12] = "Decemeber"
         };
 
-        public EventService(DatabaseService database, DiscordSocketClient client, TimerService timer, Random random)
+        public EventService(DatabaseService database, DiscordSocketClient client, TaskQueue timer, Random random)
         {
             _database = database;
             _client = client;
-            _timer = timer;
+            _scheduler = timer;
             _random = random;
         }
 
@@ -73,7 +74,8 @@ namespace RiseBot.Services
 
             await message.ModifyAsync(x => x.Content = BuildMessage());
 
-            await _timer.EnqueueAsync(@event, when, async (key, removable) =>
+            /*
+            _scheduler.ScheduleTask(@event, when, async (key, removable) =>
             {
                 @event = removable as Event;
                 var guild = _client.GetGuild(Guild.Id);
@@ -99,12 +101,13 @@ namespace RiseBot.Services
 
                 if (end > 0)
                 {
-                    await _timer.EnqueueAsync(@event, end,
+                    _scheduler.ScheduleTask(@event, end,
                         (key2, removable2) =>
                             channel.SendMessageAsync(
                                 $"{str}Event Ended! - {@event?.Description}"));
                 }
             });
+            */
 
         }
 

@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace RiseBot.Commands.Checks
 {
-    public sealed class RequireRoleAttribute : CheckBaseAttribute
+    public sealed class RequireRoleAttribute : CheckAttribute
     {
         private readonly string[] _roles;
 
@@ -14,19 +14,18 @@ namespace RiseBot.Commands.Checks
             _roles = roles;
         }
 
-        public override Task<CheckResult> CheckAsync(ICommandContext originalContext, IServiceProvider provider)
+        public override ValueTask<CheckResult> CheckAsync(CommandContext originalContext, IServiceProvider provider)
         {
             var context = originalContext as RiseContext;
 
             var user = context.User;
 
-            return Task.FromResult(
-                (from role in user.Roles
+            return (from role in user.Roles
                     from _role in _roles
                     where string.Equals(role.Name, _role, StringComparison.InvariantCultureIgnoreCase)
                     select role).Any()
                     ? CheckResult.Successful
-                    : CheckResult.Unsuccessful("You don't have the necessary role to execute this command"));
+                    : CheckResult.Unsuccessful("You don't have the necessary role to execute this command");
         }
     }
 }

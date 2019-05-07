@@ -8,6 +8,10 @@ using RiseBot.Services;
 using System;
 using System.Reflection;
 using System.Threading.Tasks;
+using Casino.Common;
+using Casino.Common.DependencyInjection;
+using Casino.Common.Discord.Net;
+using Casino.Common.Qmmands;
 
 namespace RiseBot
 {
@@ -31,6 +35,8 @@ namespace RiseBot
                 Token = config.BandToken
             });
 
+            var asm = Assembly.GetEntryAssembly();
+
             _services = new ServiceCollection()
                 .AddSingleton(_client = new DiscordSocketClient(new DiscordSocketConfig
                 {
@@ -40,12 +46,13 @@ namespace RiseBot
                 }))
                 .AddSingleton(_commands = new CommandService(new CommandServiceConfiguration
                 {
-                    CaseSensitive = false
+                    StringComparison = StringComparison.InvariantCultureIgnoreCase
                 })
-                    .AddTypeParsers())
+                    .AddTypeParsers(asm))
                 .AddSingleton(clashClient)
                 .AddSingleton(bandClient)
-                .AddServices()
+                .AddSingleton<TaskQueue>()
+                .AddServices(asm.FindTypesWithAttribute<ServiceAttribute>())
                 .BuildServiceProvider();
 
             var tcs = new TaskCompletionSource<Task>();
@@ -107,7 +114,7 @@ namespace RiseBot
             await _client.LoginAsync(TokenType.Bot, config.BotToken);
             await _client.StartAsync();
 
-            await _commands.AddModulesAsync(Assembly.GetEntryAssembly());
+            _commands.AddModules(Assembly.GetEntryAssembly());
 
             await tcs.Task;
 

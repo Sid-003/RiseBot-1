@@ -9,11 +9,11 @@ namespace RiseBot.Commands.TypeParsers
 {
     public sealed class SocketGuildChannelParser : TypeParser<SocketTextChannel>
     {
-        public override Task<TypeParserResult<SocketTextChannel>> ParseAsync(string value, ICommandContext ctx, IServiceProvider provider)
+        public override ValueTask<TypeParserResult<SocketTextChannel>> ParseAsync(Parameter param, string value, CommandContext ctx, IServiceProvider provider)
         {
             var context = ctx as RiseContext;
             if (context.Guild == null)
-                return Task.FromResult(new TypeParserResult<SocketTextChannel>("This command must be used in a guild."));
+                new TypeParserResult<SocketTextChannel>("This command must be used in a guild.");
             
             IEnumerable<SocketTextChannel> channels = context.Guild.TextChannels;
 
@@ -26,8 +26,8 @@ namespace RiseBot.Commands.TypeParsers
                 channel = channels.FirstOrDefault(x => x.Name == value);
 
             return channel == null
-                ? Task.FromResult(new TypeParserResult<SocketTextChannel>("No channel found matching the input."))
-                : Task.FromResult(new TypeParserResult<SocketTextChannel>(channel));
+                ? new TypeParserResult<SocketTextChannel>("No channel found matching the input.")
+                : new TypeParserResult<SocketTextChannel>(channel);
         }
     }
 }

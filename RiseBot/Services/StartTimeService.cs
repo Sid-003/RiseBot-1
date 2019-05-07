@@ -1,12 +1,13 @@
 ﻿using BandWrapper;
 using Discord;
-using Discord.Webhook;
 using Discord.WebSocket;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using ClashWrapper;
+
 #pragma warning disable 4014
 
 namespace RiseBot.Services
@@ -16,8 +17,8 @@ namespace RiseBot.Services
     {
         private readonly DiscordSocketClient _client;
         private readonly BandClient _band;
+        private readonly ClashClient _clash;
         private readonly DatabaseService _database;
-        private DiscordWebhookClient _webhook;
 
         //TODO prob move this to config
         private const string BandKey = "AADMPvOeSi6era-iwqaVkEtP";
@@ -32,11 +33,12 @@ namespace RiseBot.Services
 
         private CancellationTokenSource _tokenSource;
 
-        public StartTimeService(DiscordSocketClient client, BandClient band, DatabaseService database)
+        public StartTimeService(DiscordSocketClient client, BandClient band, DatabaseService database, ClashClient clash)
         {
             _client = client;
             _band = band;
             _database = database;
+            _clash = clash;
             _tokenSource = new CancellationTokenSource();
         }
 
@@ -101,7 +103,7 @@ namespace RiseBot.Services
                         await UpdateLastMessageAsync(times);
                         await repChannel.SendMessageAsync("**<@&356176442716848132> START TIMES HAVE BEEN CHANGED!**");
 
-                        Task.Run(() => RunRemindersAsync(repChannel));
+                        Task.Run(() => RunRemindersAsync(repChannel, guild));
 
                         continue;
                     }
@@ -130,7 +132,7 @@ namespace RiseBot.Services
 
                     _lastMessage = await startChannel.SendMessageAsync("@everyone", embed: embed);
                     
-                    Task.Run(() => RunRemindersAsync(repChannel));
+                    Task.Run(() => RunRemindersAsync(repChannel, guild));
                 }
                 catch (Exception ex)
                 {
@@ -167,7 +169,7 @@ namespace RiseBot.Services
                         $"{_client.GetUser(x.Key).Mention} : **Start**, {x.Value.Item1:t} - **End**,{x.Value.Item2:t}"))).Build();
         }
 
-        private async Task RunRemindersAsync(ISocketMessageChannel repChannel)
+        private async Task RunRemindersAsync(ISocketMessageChannel repChannel, Guild guild)
         {
             try
             {
@@ -177,7 +179,7 @@ namespace RiseBot.Services
                     _ => repChannel.SendMessageAsync("<@&356176442716848132> search is in 10 minutes!"),
                     _tokenSource.Token);
                 await Task.Delay(TimeSpan.FromMinutes(10)).ContinueWith(
-                    _ => repChannel.SendMessageAsync("<@&356176442716848132> search has started!"),
+                    async _ => await repChannel.SendMessageAsync($"<@&356176442716848132> search has started!\n{await Utilites.GetOrderedMembersAsync(_clash, guild.ClanTag)}"),
                     _tokenSource.Token);
             }
             catch (TaskCanceledException)

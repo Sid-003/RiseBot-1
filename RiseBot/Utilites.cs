@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using ClashWrapper.Entities.War;
+using Discord;
 
 namespace RiseBot
 {
@@ -122,6 +124,39 @@ namespace RiseBot
                 var oppStr = oppRes == WarResult.Win ? $"{"(WIN)",-6}" : "[LOSS]";
 
                 sb.AppendLine($"{clanStr}\t\t{oppStr}");
+            }
+
+            return sb.ToString();
+        }
+
+        public static async Task<string> GetOrderedMembersAsync(ClashClient clash, string clanTag)
+        {
+            var clanMembers = await clash.GetClanMembersAsync(clanTag);
+            var currentWar = await clash.GetCurrentWarAsync(clanTag);
+
+            if (currentWar.Clan.Members is null)
+            {
+                return "";
+            }
+
+            var warMembers = currentWar.Clan.Members;
+
+            var membersByDonations = clanMembers.OrderByDescending(x => x.Donations);
+
+            var i = 1;
+
+            var donationList = string.Join('\n', membersByDonations.Select(x => $"{i++}: {Format.Sanitize(x.Name)} - **{x.Donations}**"));
+
+            var sb = new StringBuilder();
+            sb.AppendLine($"__**Members Ordered By Donations**__: \n{donationList}");
+
+            if (currentWar.State == WarState.Ended)
+            {
+                var missedAttackers = warMembers.Where(x => x.Attacks.Count == 0);
+
+                var missedList = string.Join('\n', missedAttackers.Select(x => Format.Sanitize(x.Name)));
+
+                sb.AppendLine($"\n\n__**Missed Attackers**__:\n{missedList}");
             }
 
             return sb.ToString();

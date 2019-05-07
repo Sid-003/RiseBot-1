@@ -84,10 +84,7 @@ namespace RiseBot.Commands.Modules
             await SendMessageAsync("Role has been removed from everyone");
         }
 
-        //[Command("doroles")]
-        //public async Task DoRolesAsync()
-
-        protected override Task AfterExecutedAsync(Command command)
+        protected override Task AfterExecutedAsync()
         {
             Database.UpdateGuild();
             return Task.CompletedTask;

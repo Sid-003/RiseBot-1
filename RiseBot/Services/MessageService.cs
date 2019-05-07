@@ -10,6 +10,8 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Threading.Tasks;
+using Casino.Common;
+using Casino.Common.Discord.Net;
 
 namespace RiseBot.Services
 {
@@ -20,11 +22,11 @@ namespace RiseBot.Services
         private readonly DiscordSocketClient _client;
         private readonly DatabaseService _database;
         private readonly LogService _logger;
-        private readonly TimerService _timer;
+        private readonly TaskQueue _scheduler;
         private readonly IServiceProvider _services;
 
         private readonly
-            ConcurrentDictionary<ulong, ConcurrentDictionary<ulong, ConcurrentDictionary<string, CachedMessage>>>
+            ConcurrentDictionary<ulong, ConcurrentDictionary<ulong, ConcurrentDictionary<Guid, (ScheduledTask Task, CachedMessage Message)>>>
             _messageCache;
 
         private static TimeSpan MessageLifeTime => TimeSpan.FromMinutes(10);
@@ -32,18 +34,18 @@ namespace RiseBot.Services
         private DiscordWebhookClient _webhook;
         
         public MessageService(CommandService commands, DiscordSocketClient client, DatabaseService database,
-            LogService logger, TimerService timer, IServiceProvider services)
+            LogService logger, TaskQueue scheduler, IServiceProvider services)
         {
             _commands = commands;
             _client = client;
             _database = database;
             _logger = logger;
-            _timer = timer;
+            _scheduler = scheduler;
             _services = services;
 
             _messageCache =
-                new ConcurrentDictionary<ulong, ConcurrentDictionary<ulong, ConcurrentDictionary<string,
-                    CachedMessage>>>();
+                new ConcurrentDictionary<ulong, ConcurrentDictionary<ulong, ConcurrentDictionary<Guid,
+                    (ScheduledTask Task, CachedMessage Message)>>>();
 
             _commands.CommandErrored += CommandErroredAsync;
             _commands.CommandExecuted += CommandExecutedAsync;
@@ -74,7 +76,7 @@ namespace RiseBot.Services
                 _webhook = new DiscordWebhookClient(webhooks.First());
             }
 
-            await _webhook.SendMessageAsync(message.Content);
+            await _webhook.SendMessageAsync(message.Content, avatarUrl: manda.GetAvatarOrDefaultUrl());
         }
 
         private async Task HandleReceivedMessageAsync(SocketUserMessage message, bool isEdit)
@@ -105,25 +107,24 @@ namespace RiseBot.Services
             }
         }
         
-        private async Task CommandErroredAsync(ExecutionFailedResult result, ICommandContext originalContext, IServiceProvider services)
+        private async Task CommandErroredAsync(CommandErroredEventArgs args)
         {
-            if (!(originalContext is RiseContext context))
+            if (!(args.Context is RiseContext context))
                 return;
 
-            await SendMessageAsync(context, result.Reason);
+            await SendMessageAsync(context, args.Result.Reason);
 
-            if (!string.IsNullOrWhiteSpace(result.Exception.ToString()))
-                await _logger.LogAsync(Source.Commands, Severity.Error, string.Empty, result.Exception);
+            if (!string.IsNullOrWhiteSpace(args.Result.Exception.ToString()))
+                await _logger.LogAsync(Source.Commands, Severity.Error, string.Empty, args.Result.Exception);
         }
 
-        private async Task CommandExecutedAsync(Command command, CommandResult originalResult,
-            ICommandContext originalContext, IServiceProvider services)
+        private async Task CommandExecutedAsync(CommandExecutedEventArgs args)
         {
-            if (!(originalContext is RiseContext context))
+            if (!(args.Context is RiseContext context))
                 return;
 
             await _logger.LogAsync(Source.Commands, Severity.Verbose,
-                $"Successfully executed {{{command.Name}}} for {{{context.User.GetDisplayName()}}} in " +
+                $"Successfully executed {{{context.Command.Name}}} for {{{context.User.GetDisplayName()}}} in " +
                 $"{{{context.Guild.Name}/{context.Channel.Name}}}");
         }
         
@@ -131,16 +132,16 @@ namespace RiseBot.Services
         {
             if (!_messageCache.TryGetValue(context.Channel.Id, out var foundChannel))
                 foundChannel = (_messageCache[context.Channel.Id] =
-                    new ConcurrentDictionary<ulong, ConcurrentDictionary<string, CachedMessage>>());
+                    new ConcurrentDictionary<ulong, ConcurrentDictionary<Guid, (ScheduledTask Task, CachedMessage Message)>>());
 
             if (!foundChannel.TryGetValue(context.User.Id, out var foundCache))
-                foundCache = (foundChannel[context.User.Id] = new ConcurrentDictionary<string, CachedMessage>());
+                foundCache = (foundChannel[context.User.Id] = new ConcurrentDictionary<Guid, (ScheduledTask Task, CachedMessage Message)>());
 
-            var foundMessage = foundCache.FirstOrDefault(x => x.Value.ExecutingId == context.Message.Id);
+            var foundMessage = foundCache.FirstOrDefault(x => x.Value.Message.ExecutingId == context.Message.Id);
 
-            if (context.IsEdit && !foundMessage.Equals(default(KeyValuePair<string, CachedMessage>)))
+            if (context.IsEdit && !foundMessage.Equals(default(KeyValuePair<Guid, (ScheduledTask, CachedMessage)>)))
             {
-                if (await GetOrDownloadMessageAsync(foundMessage.Value.ChannelId, foundMessage.Value.ResponseId) is
+                if (await GetOrDownloadMessageAsync(foundMessage.Value.Message.ChannelId, foundMessage.Value.Message.ResponseId) is
                     IUserMessage fetchedMessage)
                 {
                     await fetchedMessage.ModifyAsync(x =>
@@ -164,10 +165,11 @@ namespace RiseBot.Services
                 CreatedAt = sentMessage.CreatedAt.ToUnixTimeMilliseconds()
             };
 
-            var when = DateTimeOffset.UtcNow.Add(MessageLifeTime).ToUnixTimeMilliseconds();
-            var key = await _timer.EnqueueAsync(message, when, RemoveAsync);
+            var key = Guid.NewGuid();
+                
+            var t = _scheduler.ScheduleTask((key, message), MessageLifeTime, RemoveAsync);
 
-            _messageCache[context.Channel.Id][context.User.Id][key] = message;
+            _messageCache[context.Channel.Id][context.User.Id][key] = (t, message);
 
             return sentMessage;
         }
@@ -182,9 +184,9 @@ namespace RiseBot.Services
                 : Task.FromResult(message);
         }
 
-        private Task RemoveAsync(string key, object removable)
+        private Task RemoveAsync(object removable)
         {
-            var message = removable as CachedMessage;
+            var (key, message) = ((Guid, CachedMessage))removable;
             _messageCache[message.ChannelId][message.UserId].TryRemove(key, out _);
 
             if (_messageCache[message.ChannelId][message.UserId].Count == 0)
@@ -224,13 +226,13 @@ namespace RiseBot.Services
                     return;
                 }
 
-                var ordered = found.OrderByDescending(x => x.Value.CreatedAt).ToImmutableArray();
+                var ordered = found.OrderByDescending(x => x.Value.Message.CreatedAt).ToImmutableArray();
                 amount = amount > ordered.Length ? ordered.Length : amount;
 
-                var toDelete = new List<(string, CachedMessage)>();
+                var toDelete = new List<(ScheduledTask, CachedMessage)>();
 
                 for (var i = 0; i < amount; i++)
-                    toDelete.Add((ordered[i].Key, ordered[i].Value));
+                    toDelete.Add(ordered[i].Value);
 
                 var res = await DeleteMessagesAsync(context, manageMessages, toDelete);
                 deleted += res;
@@ -239,16 +241,17 @@ namespace RiseBot.Services
         }
 
         private async Task<int> DeleteMessagesAsync(RiseContext context, bool manageMessages,
-            IEnumerable<(string Key, CachedMessage Cached)> messages)
+            IEnumerable<(ScheduledTask Task, CachedMessage Message)> messages)
         {
             var fetchedMessages = new List<IMessage>();
 
-            foreach (var (key, cached) in messages)
+            foreach (var cached in messages)
             {
-                await RemoveAsync(key, cached);
-                await _timer.RemoveAsync(key);
+                await RemoveAsync(cached);
 
-                if (await GetOrDownloadMessageAsync(cached.ChannelId, cached.ResponseId) is IMessage fetchedMessage)
+                cached.Task.Cancel();
+
+                if (await GetOrDownloadMessageAsync(cached.Message.ChannelId, cached.Message.ResponseId) is IMessage fetchedMessage)
                     fetchedMessages.Add(fetchedMessage);
             }
 

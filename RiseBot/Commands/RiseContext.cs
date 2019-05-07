@@ -3,7 +3,7 @@ using Qmmands;
 
 namespace RiseBot.Commands
 {
-    public class RiseContext : ICommandContext
+    public class RiseContext : CommandContext
     {
         public DiscordSocketClient Client { get; }
         public SocketUserMessage Message { get; }

@@ -1,5 +1,4 @@
 ﻿using ClashWrapper;
-using ClashWrapper.Entities.War;
 using ClashWrapper.Entities.WarLog;
 using Discord;
 using Discord.WebSocket;
@@ -62,37 +61,9 @@ namespace RiseBot.Commands.Modules
         [RunMode(RunMode.Parallel)]
         public async Task GetMembersAsync()
         {
-            var clanMembers = await Clash.GetClanMembersAsync(Guild.ClanTag);
-            var currentWar = await Clash.GetCurrentWarAsync(Guild.ClanTag);
+            var s = await Utilites.GetOrderedMembersAsync(Clash, Guild.ClanTag);
 
-            if (currentWar.Clan.Members is null)
-            {
-                await SendMessageAsync("War search is in progress, and yes the API is that bad that this command doesn't work during search");
-                return;
-            }
-
-            var warMembers = currentWar.Clan.Members;
-
-            var membersByDonations = clanMembers.OrderByDescending(x => x.Donations);
-
-            var i = 1;
-
-            var donationList = string.Join('\n', membersByDonations.Select(x => $"{i++}: {Format.Sanitize(x.Name)} - **{x.Donations}**"));
-
-            var sb = new StringBuilder();
-            sb.AppendLine($"__**Members Ordered By Donations**__: \n{donationList}");
-
-            if(currentWar.State == WarState.Ended)
-            {
-
-                var missedAttackers = warMembers.Where(x => x.Attacks.Count == 0);
-
-                var missedList = string.Join('\n', missedAttackers.Select(x => Format.Sanitize(x.Name)));
-
-                sb.AppendLine($"\n\n__**Missed Attackers**__:\n{missedList}");
-            }
-
-            await SendMessageAsync(sb.ToString());
+            await SendMessageAsync(s == "" ? "API is currently under maintenance" : s);
         }
 
         [Command("warlog")]
