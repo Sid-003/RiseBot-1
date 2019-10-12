@@ -55,7 +55,7 @@ namespace BandWrapper
 
                     var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
-                    await _client.InternalLogReceivedAsync($"GET {endpoint} {sw.ElapsedMilliseconds}ms");
+                    //await _client.InternalLogReceivedAsync($"GET {endpoint} {sw.ElapsedMilliseconds}ms");
 
                     var model = JsonConvert.DeserializeObject<ErrorMessageModel>(content);
 

@@ -1,4 +1,8 @@
 ﻿using BandWrapper;
+using Casino.Common;
+using Casino.DependencyInjection;
+using Casino.Discord;
+using Casino.Qmmands;
 using ClashWrapper;
 using Discord;
 using Discord.WebSocket;
@@ -8,10 +12,6 @@ using RiseBot.Services;
 using System;
 using System.Reflection;
 using System.Threading.Tasks;
-using Casino.Common;
-using Casino.Common.DependencyInjection;
-using Casino.Common.Discord.Net;
-using Casino.Common.Qmmands;
 
 namespace RiseBot
 {
@@ -55,13 +55,16 @@ namespace RiseBot
                 .AddServices(asm.FindTypesWithAttribute<ServiceAttribute>())
                 .BuildServiceProvider();
 
-            var tcs = new TaskCompletionSource<Task>();
+            var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-            _client.Ready += () =>
+            Task OnReadyAsync()
             {
-                tcs.SetResult(Task.CompletedTask);
+                tcs.SetResult(true);
+                _client.Ready -= OnReadyAsync;
                 return Task.CompletedTask;
-            };
+            }
+
+            _client.Ready += OnReadyAsync;
 
             _client.UserJoined += user =>
             {
@@ -80,8 +83,11 @@ namespace RiseBot
                         Color = new Color(0x11f711),
                         ThumbnailUrl = dGuild.CurrentUser.GetAvatarUrl(),
                         Title = "Welcome to the Discord!",
-                        Description = $"{user.GetDisplayName()} welcome to Reddit Rise!\n" +
-                                      "Please post a picture of your FWA base, " +
+                        Description = $"{user.GetDisplayName()} welcome to Reddit Rise!\nHere are some premade, perfect FWA bases. Please click the link that corresponds to your TH.\n" +
+                                      $"{Format.Url("TH12", "https://link.clashofclans.com/en?action=OpenLayout&id=TH12%3AWB%3AAAAAHQAAAAFw3gmOJJOUocokY9SNAt9V")}\n" +
+                                      $"{Format.Url("TH11", "https://link.clashofclans.com/en?action=OpenLayout&id=TH11%3AWB%3AAAAAOwAAAAE4a6sCQApcIa9kDl5W1N3C")}\n" +
+                                      $"{Format.Url("TH10", "https://link.clashofclans.com/en?action=OpenLayout&id=TH10%3AWB%3AAAAAFgAAAAF-L9A_pnLR3BtoRk7SZjD_")}\n" +
+                                      $"{Format.Url("TH9", "https://link.clashofclans.com/en?action=OpenLayout&id=TH9%3AWB%3AAAAAHQAAAAFw3chc3wBw2ipMxGm6Mq8P")}\n" +
                                       "and if you're feeling nice post your in game player tag (e.g. #YRQ2Y0UC) so we know who you are!"
                     };
 
@@ -120,9 +126,12 @@ namespace RiseBot
 
             _services.GetService<MessageService>();
 
-#if !DEBUG
-            Task.Run(() => _services.GetService<WarReminderService>().StartPollingServiceAsync());
+            //Task.Run(() => _services.GetService<BigBrotherService>().RunServiceAsync());
             Task.Run(() => _services.GetService<WarReminderService>().StartRemindersAsync());
+
+#if !DEBUG
+            Task.Run(() => _services.GetService<WarReminderService>().StartRemindersAsync());
+            Task.Run(() => _services.GetService<WarReminderService>().StartPollingServiceAsync());
             Task.Run(() => _services.GetService<StartTimeService>().StartServiceAsync());
 #endif
 

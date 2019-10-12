@@ -1,4 +1,6 @@
-﻿using Discord.WebSocket;
+﻿using Casino.Discord;
+using ClashWrapper;
+using Discord.WebSocket;
 using Qmmands;
 using RiseBot.Commands.Checks;
 using RiseBot.Services;
@@ -10,13 +12,15 @@ namespace RiseBot.Commands.Modules
 {
     [RequireOwner(Group = "perms")]
     [RequireRole("fwa representatives", Group = "perms")]
+    [RequireRep(Group = "perms")]
     public class RepCommands : RiseBase
     {
         //TODO add/remove rep role
         public StartTimeService Start { get; set; }
+        public ClashClient Clash { get; set; }
 
         [Command("addrep")]
-        public Task AddRepAsync(SocketGuildUser user, double timezone)
+        public async Task AddRepAsync(SocketGuildUser user, double timezone)
         {
             Guild.FWAReps.Add(new FWARep
             {
@@ -24,16 +28,32 @@ namespace RiseBot.Commands.Modules
                 TimeZone = timezone
             });
 
-            return SendMessageAsync("Rep has been added");
+            var (start, end) = Start.GetStartEndTimes();
+
+            var times = Guild.FWAReps.ToDictionary(x => x.Id,
+                x => (start.Add(TimeSpan.FromHours(x.TimeZone)),
+                    end.Add(TimeSpan.FromHours(x.TimeZone))));
+
+            await Start.UpdateLastMessageAsync(times);
+
+            await SendMessageAsync("Rep has been added");
         }
 
         [Command("removerep")]
-        public Task RemoveRepAsync(SocketGuildUser user)
+        public async Task RemoveRepAsync(SocketGuildUser user)
         {
             var rep = Guild.FWAReps.FirstOrDefault(x => x.Id == user.Id);
             Guild.FWAReps.Remove(rep);
 
-            return SendMessageAsync("Rep has been removed");
+            var (start, end) = Start.GetStartEndTimes();
+
+            var times = Guild.FWAReps.ToDictionary(x => x.Id,
+                x => (start.Add(TimeSpan.FromHours(x.TimeZone)),
+                    end.Add(TimeSpan.FromHours(x.TimeZone))));
+
+            await Start.UpdateLastMessageAsync(times);
+
+            await SendMessageAsync("Rep has been removed");
         }
         
         [Command("settimezone")]
@@ -82,6 +102,38 @@ namespace RiseBot.Commands.Modules
             Guild.InWarRoleId = newRole.Id;
 
             await SendMessageAsync("Role has been removed from everyone");
+        }
+
+        [Command("message")]
+        public async Task MessageAsync(int mapPosition, [Remainder] string message)
+        {
+            var war = await Clash.GetCurrentWarAsync(Guild.ClanTag);
+            var inWar = war.Clan.Members.FirstOrDefault(x => x.MapPosition == mapPosition);
+
+            if(inWar is null)
+            {
+                await SendMessageAsync("This position is not in war");
+                return;
+            }
+
+            var member = Guild.GuildMembers.FirstOrDefault(x => x.Tags.Any(y => string.Equals(y, inWar.Tag)));
+
+            if(member is null)
+            {
+                await SendMessageAsync("This member isn't in the Discord");
+                return;
+            }
+
+            var user = await Context.Guild.GetOrFetchUserAsync(member.Id);
+
+            await SendMessageAsync($"{user.Mention} - {message}");
+        }
+
+        [Command("nuke")]
+        public Task NukeAsync()
+        {
+            Environment.Exit(69);
+            return Task.CompletedTask;
         }
 
         protected override Task AfterExecutedAsync()

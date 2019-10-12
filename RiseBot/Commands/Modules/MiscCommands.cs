@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Casino.Common.Discord.Net;
+using Casino.Discord;
 using Discord.WebSocket;
 
 namespace RiseBot.Commands.Modules

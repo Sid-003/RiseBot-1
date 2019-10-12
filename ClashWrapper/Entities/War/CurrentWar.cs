@@ -44,6 +44,11 @@ namespace ClashWrapper.Entities.War
 
         private WarClan _opponent;
         public WarClan Opponent => _opponent ?? (_opponent = new WarClan(_model.Opponent));
+
+        public object FirstOrDefault(Func<object, object> p)
+        {
+            throw new NotImplementedException();
+        }
     }
 
     public enum WarState

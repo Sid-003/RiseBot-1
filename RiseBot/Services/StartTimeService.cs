@@ -7,6 +7,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using ClashWrapper;
+using Casino.Discord;
 
 #pragma warning disable 4014
 
@@ -40,6 +41,46 @@ namespace RiseBot.Services
             _database = database;
             _clash = clash;
             _tokenSource = new CancellationTokenSource();
+
+            _client.ReactionAdded += async (cache, channel, reaction) =>
+            {
+                if (cache.Id != _lastMessage?.Id || reaction.UserId == _client.CurrentUser.Id)
+                    return;
+
+                var user = await _client.GetOrFetchUserAsync(reaction.UserId);
+
+                switch (reaction.Emote.Name)
+                {
+                    case "✅":
+                        await channel.SendMessageAsync(string.Empty, embed: new EmbedBuilder
+                        {
+                            Description = $"{user.Mention} can start war",
+                            Color = Color.Green
+                        }
+                            .Build());
+
+                        break;
+
+                    case "❌":
+                        await channel.SendMessageAsync(string.Empty, embed: new EmbedBuilder
+                        {
+                            Description = $"{user.Mention} cannot start war",
+                            Color = Color.Red
+                        }
+                            .Build());
+
+                        break;
+
+                    case "⚠":
+                        await channel.SendMessageAsync(string.Empty, embed: new EmbedBuilder
+                        {
+                            Description = $"{user.Mention} can maybe start war",
+                            Color = Color.Orange
+                        }
+                            .Build());
+                        break;
+                }
+            };
         }
 
         //TODO cancel reminders if time is changed
@@ -85,8 +126,8 @@ namespace RiseBot.Services
 
                     if (!(_client.GetChannel(guild.RepChannelId) is SocketTextChannel repChannel))
                         continue;
-
-                    if (post.Content.Contains("SYNC TIME HAS BEEN CHANGED", StringComparison.InvariantCultureIgnoreCase))
+                    
+                    if (post?.Content?.Contains("SYNC TIME HAS BEEN CHANGED", StringComparison.InvariantCultureIgnoreCase) == true)
                     {
                         _tokenSource.Cancel(true);
 
@@ -101,7 +142,7 @@ namespace RiseBot.Services
                                 _end.Add(TimeSpan.FromHours(rep.TimeZone))));
 
                         await UpdateLastMessageAsync(times);
-                        await repChannel.SendMessageAsync("**<@&356176442716848132> START TIMES HAVE BEEN CHANGED!**");
+                        await repChannel.SendMessageAsync("**@everyone START TIMES HAVE BEEN CHANGED!**");
 
                         Task.Run(() => RunRemindersAsync(repChannel, guild));
 
@@ -122,6 +163,9 @@ namespace RiseBot.Services
                     _start = post.Schedule.Start;
                     _end = post.Schedule.End;
 
+                    if (_end - _start != TimeSpan.FromHours(2))
+                        await repChannel.SendMessageAsync("ding ding ding");
+
                     reps = guild.FWAReps;
 
                     times = reps.ToDictionary(rep => rep.Id,
@@ -131,6 +175,7 @@ namespace RiseBot.Services
                     var embed = BuildEmbed(times);
 
                     _lastMessage = await startChannel.SendMessageAsync("@everyone", embed: embed);
+                    await _lastMessage.AddReactionsAsync(new[] { new Emoji("✅"), new Emoji("⚠"), new Emoji("❌") });
                     
                     Task.Run(() => RunRemindersAsync(repChannel, guild));
                 }
@@ -166,20 +211,22 @@ namespace RiseBot.Services
             .AddField("Sync Times!",
                 string.Join('\n',
                     times.Select(x =>
-                        $"{_client.GetUser(x.Key).Mention} : **Start**, {x.Value.Item1:t} - **End**,{x.Value.Item2:t}"))).Build();
+                        $"{_client.GetUser(x.Key).Mention} : **Start**, {x.Value.Item1:t} - **End**,{x.Value.Item2:t}")))
+            .AddField("\u200b", "React with ✅ if you can start war, ⚠ if maybe and, ❌ if not")
+            .Build();
         }
 
         private async Task RunRemindersAsync(ISocketMessageChannel repChannel, Guild guild)
         {
             try
             {
-                //TODO rep role in db
-                //for some reason _start - DateTimeOffset.UtcNow will send at the same time as _start - DateTimeOffset.Utc - TimeSpan.FromMinutes(10)
+                await Task.Delay(_start - DateTimeOffset.UtcNow - TimeSpan.FromHours(1)).ContinueWith(_ =>
+                    repChannel.SendMessageAsync("@everyone search is in 1hr!"));
                 await Task.Delay(_start - DateTimeOffset.UtcNow - TimeSpan.FromMinutes(10)).ContinueWith(
-                    _ => repChannel.SendMessageAsync("<@&356176442716848132> search is in 10 minutes!"),
+                    _ => repChannel.SendMessageAsync("@everyone search is in 10 minutes!"),
                     _tokenSource.Token);
                 await Task.Delay(TimeSpan.FromMinutes(10)).ContinueWith(
-                    async _ => await repChannel.SendMessageAsync($"<@&356176442716848132> search has started!\n{await Utilites.GetOrderedMembersAsync(_clash, guild.ClanTag)}"),
+                    async _ => await repChannel.SendMessageAsync($"@everyone search has started!\n{await Utilites.GetOrderedMembersAsync(_clash, guild.ClanTag)}"),
                     _tokenSource.Token);
             }
             catch (TaskCanceledException)

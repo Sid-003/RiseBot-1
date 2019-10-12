@@ -6,7 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Casino.Common.Discord.Net;
+using Casino.Discord;
 
 namespace RiseBot.Commands.Modules
 {
@@ -66,7 +66,8 @@ namespace RiseBot.Commands.Modules
             var generalChannel = Context.Guild.GetTextChannel(Guild.GeneralId);
 
             await generalChannel.SendMessageAsync(
-                $"{user.Mention} welcome to Reddit Rise! Now that you are a verified member you have access to our channels!");
+                $"{user.Mention} welcome to Reddit Rise! Now that you are a verified member you have access to our channels!\n" +
+                $"You should familiarise  yourself with the <#371652203452170240> and give <#618139663252717589> a read");
         }
 
         [Command("notverified")]

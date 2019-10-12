@@ -135,15 +135,32 @@ namespace RiseBot.Commands.Modules
 
             var builder = new EmbedBuilder
             {
-                Title = $"{player.Name}{player.Tag}",
+                Title = player.Name + player.Tag,
+                Url = $"https://link.clashofclans.com/en?action=OpenPlayerProfile&tag={player.Tag.Replace("#", "")}",
                 Color = Color.Blue,
                 Description = $"Townhall: {player.TownHallLevel}"
             };
 
             builder.AddField("Heroes", string.Join("\n", player.Heroes.Where(x => x.Village == "home").Select(x => $"{x.Name}: **{x.Level}**")));
-            builder.AddField("Troops", string.Join("\n", player.Troops.Where(x => x.Village == "home").Select(x => $"{x.Name}: **{x.Level}**")));
+            //builder.AddField("Troops", string.Join("\n", player.Troops.Where(x => x.Village == "home").Select(x => $"{x.Name}: **{x.Level}**")));
 
             await SendMessageAsync(string.Empty, builder.Build());
+        }
+
+        [Command("fwabases")]
+        public Task SendFWABasesAsync()
+        {
+            var embed = new EmbedBuilder
+            {
+                Color = Color.Gold,
+                Description = "Here are some already perfect FWA bases for you. Just click the link that corresponds to your TH.\n" +
+                $"{Format.Url("TH12", "https://link.clashofclans.com/en?action=OpenLayout&id=TH12%3AWB%3AAAAAHQAAAAFw3gmOJJOUocokY9SNAt9V")}\n" +
+                $"{Format.Url("TH11", "https://link.clashofclans.com/en?action=OpenLayout&id=TH11%3AWB%3AAAAAOwAAAAE4a6sCQApcIa9kDl5W1N3C")}\n" +
+                $"{Format.Url("TH10", "https://link.clashofclans.com/en?action=OpenLayout&id=TH10%3AWB%3AAAAAFgAAAAF-L9A_pnLR3BtoRk7SZjD_")}\n" +
+                $"{Format.Url("TH9", "https://link.clashofclans.com/en?action=OpenLayout&id=TH9%3AWB%3AAAAAHQAAAAFw3chc3wBw2ipMxGm6Mq8P")}"
+            };
+
+            return SendMessageAsync(string.Empty, embed.Build());
         }
     }
 }

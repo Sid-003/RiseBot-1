@@ -1,8 +1,10 @@
 using Discord;
+using Discord.WebSocket;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 
 namespace RiseBot
 {
@@ -32,6 +34,30 @@ namespace RiseBot
             if (userId != user.Id) return false;
             parsed = content.Substring(endPos + 2);
             return true;
+        }
+
+        public static async Task ModifyAndWaitAsync(this IRole role, DiscordSocketClient client, Action<RoleProperties> action)
+        {
+            RoleProperties props = null;
+            action.Invoke(props);
+
+            var tcs = new TaskCompletionSource<bool>();
+
+            Task RoleUpdatedAsync(SocketRole before, SocketRole after)
+            {
+                if(before.Id == role.Id)
+                    tcs.SetResult(true);
+
+                return Task.CompletedTask;
+            }
+
+            client.RoleUpdated += RoleUpdatedAsync;
+
+            await role.ModifyAsync(action);
+
+            await tcs.Task;
+
+            client.RoleUpdated -= RoleUpdatedAsync;
         }
     }
 }
