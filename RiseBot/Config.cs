@@ -10,20 +10,14 @@ namespace RiseBot
         public string BandToken { get; private set; }
         public string PushBulletToken { get; private set; }
 
-        private Config() { }
-
-        public static Config Create(string dir)
+        public Config(string dir)
         {
             var config = JObject.Parse(File.ReadAllText(dir));
 
-            //why am I retarded
-            return new Config
-            {
-                BotToken = $"{config["Token"]}",
-                ClashToken = $"{config["ClashKey"]}",
-                BandToken = $"{config["BandKey"]}",
-                PushBulletToken = $"{config["PushBulletKey"]}"
-            }; ;
+            BotToken = config["Token"].ToString();
+            ClashToken = config["ClashKey"].ToString();
+            BandToken = config["BandKey"].ToString();
+            PushBulletToken = config["PushBulletKey"].ToString();
         }
     }
 }

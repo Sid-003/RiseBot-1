@@ -22,7 +22,7 @@ namespace RiseBot.Services
         private readonly DatabaseService _database;
 
         //TODO prob move this to config
-        private const string BandKey = "AADMPvOeSi6era-iwqaVkEtP";
+        private readonly string BandKey;
         private const string Locale = "en_GB";
 
         private static TimeSpan Period => TimeSpan.FromMinutes(30);

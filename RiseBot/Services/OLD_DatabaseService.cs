@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 namespace RiseBot.Services
 {
     //TODO this is shit
+
+    //it really is
+
     public class DatabaseService
     {
         private const string DatabaseDir = "./Database.db";

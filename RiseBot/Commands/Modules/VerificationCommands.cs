@@ -125,10 +125,10 @@ namespace RiseBot.Commands.Modules
             return SendMessageAsync("Tag has been removed");
         }
 
-        protected override Task AfterExecutedAsync()
+        protected override ValueTask AfterExecutedAsync()
         {
             Database.UpdateGuild();
-            return Task.CompletedTask;
+            return default;
         }
     }
 }

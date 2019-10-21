@@ -14,18 +14,15 @@ namespace RiseBot.Commands.Checks
             _roles = roles;
         }
 
-        public override ValueTask<CheckResult> CheckAsync(CommandContext originalContext, IServiceProvider provider)
+        public override ValueTask<CheckResult> CheckAsync(CommandContext originalContext)
         {
             var context = originalContext as RiseContext;
 
             var user = context.User;
 
-            return (from role in user.Roles
-                    from _role in _roles
-                    where string.Equals(role.Name, _role, StringComparison.InvariantCultureIgnoreCase)
-                    select role).Any()
-                    ? CheckResult.Successful
-                    : CheckResult.Unsuccessful("You don't have the necessary role to execute this command");
+            return user.Roles.Select(x => x.Name).Intersect(_roles, StringComparer.InvariantCultureIgnoreCase).Any()
+                 ? CheckResult.Successful
+                 : CheckResult.Unsuccessful("You don't have the necessary role to execute this command?");
         }
     }
 }

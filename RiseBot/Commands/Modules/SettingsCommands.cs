@@ -147,10 +147,10 @@ namespace RiseBot.Commands.Modules
             return SendMessageAsync(string.Join('\n', message));
         }
 
-        protected override Task AfterExecutedAsync()
+        protected override ValueTask AfterExecutedAsync()
         {
             Database.UpdateGuild();
-            return Task.CompletedTask;
+            return default;
         }
     }
 }

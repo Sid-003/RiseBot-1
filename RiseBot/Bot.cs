@@ -23,7 +23,7 @@ namespace RiseBot
 
         public async Task RunBotAsync()
         {
-            var config = Config.Create("./config.json");
+            var config = new Config("./config.json");
 
             var clashClient = new ClashClient(new ClashClientConfig
             {
@@ -127,7 +127,7 @@ namespace RiseBot
             _services.GetService<MessageService>();
 
             //Task.Run(() => _services.GetService<BigBrotherService>().RunServiceAsync());
-            Task.Run(() => _services.GetService<WarReminderService>().StartRemindersAsync());
+            _ = Task.Run(() => _services.GetService<WarReminderService>().StartRemindersAsync());
 
 #if !DEBUG
             Task.Run(() => _services.GetService<WarReminderService>().StartRemindersAsync());

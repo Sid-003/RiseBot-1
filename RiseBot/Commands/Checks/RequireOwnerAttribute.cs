@@ -6,13 +6,13 @@ namespace RiseBot.Commands.Checks
 {
     public sealed class RequireOwnerAttribute : CheckAttribute
     {
-        public override ValueTask<CheckResult> CheckAsync(CommandContext originalContext, IServiceProvider provider)
+        public override ValueTask<CheckResult> CheckAsync(CommandContext originalContext)
         {
             var context = originalContext as RiseContext;
 
             return context.User.Id == context.Guild.OwnerId
                 ? CheckResult.Successful
                 : CheckResult.Unsuccessful("Command can only be executed by the guild owner");
-        }
+        }       
     }
 }

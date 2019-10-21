@@ -136,10 +136,10 @@ namespace RiseBot.Commands.Modules
             return Task.CompletedTask;
         }
 
-        protected override Task AfterExecutedAsync()
+        protected override ValueTask AfterExecutedAsync()
         {
             Database.UpdateGuild();
-            return Task.CompletedTask;
+            return default;
         }
     }
 }

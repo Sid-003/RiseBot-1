@@ -10,8 +10,7 @@ namespace RiseBot.Commands.TypeParsers
 {
     public sealed class SocketUserParser : TypeParser<SocketGuildUser>
     {
-        public override ValueTask<TypeParserResult<SocketGuildUser>> ParseAsync(Parameter param, string value, CommandContext ctx,
-            IServiceProvider provider)
+        public override ValueTask<TypeParserResult<SocketGuildUser>> ParseAsync(Parameter param, string value, CommandContext ctx)
         {
             var context = ctx as RiseContext;
 

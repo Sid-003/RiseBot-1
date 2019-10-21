@@ -45,7 +45,8 @@ namespace RiseBot.Services
 
             _messageCache = new ConcurrentDictionary<ulong, ConcurrentDictionary<ulong, ConcurrentDictionary<Guid, (ScheduledTask<(Guid, CachedMessage)> Task, CachedMessage Message)>>>();
 
-            _commands.CommandErrored += CommandErroredAsync;
+        
+            _commands.CommandExecutionFailed += CommandErroredAsync;
             _commands.CommandExecuted += CommandExecutedAsync;
 
             _client.MessageReceived += (msg) =>
@@ -81,7 +82,7 @@ namespace RiseBot.Services
         {
             if (message.Channel is IPrivateChannel) return;
 
-            var context = new RiseContext(_client, message, isEdit);
+            var context = new RiseContext(_client, message, _services, isEdit);
             var guild = _database.Guild;
             
             var prefix = guild.Prefix;
@@ -89,7 +90,7 @@ namespace RiseBot.Services
             if (CommandUtilities.HasPrefix(message.Content, prefix, out var output) || 
                 message.HasMentionPrefix(_client.CurrentUser, out output))
             {
-                var result = await _commands.ExecuteAsync(output, context, _services);
+                var result = await _commands.ExecuteAsync(output, context);
 
                 if (result is CommandNotFoundResult)
                 {
@@ -105,7 +106,7 @@ namespace RiseBot.Services
             }
         }
         
-        private async Task CommandErroredAsync(CommandErroredEventArgs args)
+        private async Task CommandErroredAsync(CommandExecutionFailedEventArgs args)
         {
             if (!(args.Context is RiseContext context))
                 return;

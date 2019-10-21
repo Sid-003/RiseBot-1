@@ -120,8 +120,9 @@ namespace RiseBot
                 var oppRes = opponentWarLog[i].Result;
 
                 //leaving here to show how stupid I am
-                var clanStr = clanRes == WarResult.Win ? $"{"(WIN)", -6}" : "[LOSS]";
-                var oppStr = oppRes == WarResult.Win ? $"{"(WIN)",-6}" : "[LOSS]";
+                //sid: leaving a comment here to truly emphasize how stupid you are
+                var clanStr = clanRes == WarResult.Win ? "(WIN)".PadLeft(6) : "[LOSS]";
+                var oppStr = oppRes == WarResult.Win ? "(WIN)".PadLeft(6) : "[LOSS]";
 
                 sb.AppendLine($"{clanStr}\t\t{oppStr}");
             }

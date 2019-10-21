@@ -9,10 +9,10 @@ namespace RiseBot.Commands.Checks
 {
     public class RequireRepAttribute : CheckAttribute
     {
-        public override ValueTask<CheckResult> CheckAsync(CommandContext ctx, IServiceProvider provider)
+        public override ValueTask<CheckResult> CheckAsync(CommandContext ctx)
         {
             var context = (RiseContext)ctx;
-            var db = provider.GetService<DatabaseService>();
+            var db = ctx.ServiceProvider.GetService<DatabaseService>();
 
             var reps = db.Guild.FWAReps;
 

@@ -9,7 +9,7 @@ namespace RiseBot.Commands.TypeParsers
 {
     public sealed class SocketGuildChannelParser : TypeParser<SocketTextChannel>
     {
-        public override ValueTask<TypeParserResult<SocketTextChannel>> ParseAsync(Parameter param, string value, CommandContext ctx, IServiceProvider provider)
+        public override ValueTask<TypeParserResult<SocketTextChannel>> ParseAsync(Parameter param, string value, CommandContext ctx)
         {
             var context = ctx as RiseContext;
             if (context.Guild == null)

@@ -89,7 +89,7 @@ namespace RiseBot.Commands.Modules
 
             foreach (var module in modules)
             {
-                var result = await module.RunChecksAsync(Context, Services);
+                var result = await module.RunChecksAsync(Context);
 
                 if (!result.IsSuccessful) continue;
 
@@ -97,7 +97,7 @@ namespace RiseBot.Commands.Modules
 
                 foreach (var command in module.Commands)
                 {
-                    result = await command.RunChecksAsync(Context, Services);
+                    result = await command.RunChecksAsync(Context);
 
                     if(result.IsSuccessful)
                         filtered.Add(command);
