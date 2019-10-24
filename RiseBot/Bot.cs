@@ -127,8 +127,7 @@ namespace RiseBot
             _services.GetService<MessageService>();
 
             //Task.Run(() => _services.GetService<BigBrotherService>().RunServiceAsync());
-            _ = Task.Run(() => _services.GetService<WarReminderService>().StartRemindersAsync());
-
+            
 #if !DEBUG
             Task.Run(() => _services.GetService<WarReminderService>().StartRemindersAsync());
             Task.Run(() => _services.GetService<WarReminderService>().StartPollingServiceAsync());

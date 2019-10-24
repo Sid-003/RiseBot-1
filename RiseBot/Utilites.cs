@@ -121,8 +121,8 @@ namespace RiseBot
 
                 //leaving here to show how stupid I am
                 //sid: leaving a comment here to truly emphasize how stupid you are
-                var clanStr = clanRes == WarResult.Win ? "(WIN)".PadLeft(6) : "[LOSS]";
-                var oppStr = oppRes == WarResult.Win ? "(WIN)".PadLeft(6) : "[LOSS]";
+                var clanStr = clanRes == WarResult.Win ? "(WIN)".PadRight(6) : "[LOSS]";
+                var oppStr = oppRes == WarResult.Win ? "(WIN)".PadRight(6) : "[LOSS]";
 
                 sb.AppendLine($"{clanStr}\t\t{oppStr}");
             }
